@@ -1,0 +1,14 @@
+# Build output (see build.bat)
+/build/
+
+# Game data directory: keep the folder, not the copyrighted game assets in it
+/data/*
+!/data/.gitkeep
+
+# Visual Studio / MSVC cruft
+.vs/
+*.user
+out/
+
+# Windows
+Thumbs.db
