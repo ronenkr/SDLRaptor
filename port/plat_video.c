@@ -6,6 +6,7 @@
 * XRGB8888 texture and renders it stretched to 320x240 logical space
 * (VGA mode 13h pixels are 1:1.2, so 320x200 -> 4:3 on a 320x240 canvas).
 *---------------------------------------------------------------------------*/
+#include <string.h>
 #include <SDL3/SDL.h>
 
 #include "types.h"
@@ -24,6 +25,11 @@ PRIVATE SDL_Texture  *texture  = NULL;
 PRIVATE BYTE  shadowpal[768];         /* 6-bit VGA values, as the game sets */
 PRIVATE DWORD palette32[256];         /* expanded to XRGB8888              */
 PRIVATE BOOL  screendirty = FALSE;
+PRIVATE PLAT_SCALER g_scaler = PLAT_SCALER_NONE;
+
+/* palette-expanded 320x200 frame, built every Present before either a
+   straight copy (no scaler) or Scale2x reads it */
+PRIVATE DWORD scratch_rgb[SCREENWIDTH * SCREENHEIGHT];
 
 extern BYTE *displayscreen;
 
@@ -47,9 +53,69 @@ ExpandPalette ( VOID )
    }
 }
 
+/*------------------------------------------------------------------------
+   Scale2x() - AdvMAME2x/Scale2x edge-preserving 2x upscale.
+   For each source pixel E with 4-neighbors B(up)/H(down)/D(left)/F(right):
+      E0=D  if D==B && B!=F && D!=H   (else E)   -> top-left
+      E1=F  if B==F && B!=D && F!=H   (else E)   -> top-right
+      E2=D  if D==H && D!=B && H!=F   (else E)   -> bottom-left
+      E3=F  if H==F && D!=H && B!=F   (else E)   -> bottom-right
+   Edge pixels clamp to the source edge instead of sampling out of bounds.
+  ------------------------------------------------------------------------*/
+PRIVATE VOID
+Scale2x (
+const DWORD *src,          // INPUT : w*h source pixels
+INT w,                     // INPUT : source width
+INT h,                     // INPUT : source height
+DWORD *dst,                // OUTPUT: 2w*2h destination pixels
+INT dst_pitch_px           // INPUT : dst row stride, in pixels
+)
+{
+   INT x, y;
+
+   for ( y = 0; y < h; y++ )
+   {
+      const DWORD *srow  = src + y * w;
+      const DWORD *srowU = src + ( y > 0     ? y - 1 : y ) * w;
+      const DWORD *srowD = src + ( y < h - 1 ? y + 1 : y ) * w;
+      DWORD       *drow0 = dst + ( y * 2 )     * dst_pitch_px;
+      DWORD       *drow1 = dst + ( y * 2 + 1 ) * dst_pitch_px;
+
+      for ( x = 0; x < w; x++ )
+      {
+         DWORD B = srowU[x];
+         DWORD H = srowD[x];
+         DWORD D = srow[ x > 0     ? x - 1 : x ];
+         DWORD F = srow[ x < w - 1 ? x + 1 : x ];
+         DWORD E = srow[x];
+         DWORD E0 = E, E1 = E, E2 = E, E3 = E;
+
+         if ( D == B && B != F && D != H ) E0 = D;
+         if ( B == F && B != D && F != H ) E1 = F;
+         if ( D == H && D != B && H != F ) E2 = D;
+         if ( H == F && D != H && B != F ) E3 = F;
+
+         drow0[x * 2]     = E0;
+         drow0[x * 2 + 1] = E1;
+         drow1[x * 2]     = E2;
+         drow1[x * 2 + 1] = E3;
+      }
+   }
+}
+
+VOID
+PLAT_SetScaler (
+PLAT_SCALER scaler
+)
+{
+   g_scaler = scaler;
+}
+
 VOID
 PLAT_CreateWindow ( VOID )
 {
+   INT tex_scale = ( g_scaler == PLAT_SCALER_ADVMAME2X ) ? 2 : 1;
+
    if ( window )
       return;
 
@@ -64,11 +130,16 @@ PLAT_CreateWindow ( VOID )
             SDL_LOGICAL_PRESENTATION_LETTERBOX );
 
    texture = SDL_CreateTexture ( renderer, SDL_PIXELFORMAT_XRGB8888,
-            SDL_TEXTUREACCESS_STREAMING, SCREENWIDTH, SCREENHEIGHT );
+            SDL_TEXTUREACCESS_STREAMING,
+            SCREENWIDTH * tex_scale, SCREENHEIGHT * tex_scale );
    if ( !texture )
       EXIT_Error ( "PLAT_CreateWindow: texture: %s", SDL_GetError () );
 
    SDL_SetTextureScaleMode ( texture, SDL_SCALEMODE_NEAREST );
+
+   /* the game draws its own cursor (PTR_DrawCursor); hide the OS one so
+      they don't both show at once */
+   SDL_HideCursor ();
 
    ExpandPalette ();
    screendirty = TRUE;
@@ -122,16 +193,32 @@ PLAT_Present ( VOID )
    if ( !renderer || !displayscreen )
       return;
 
-   if ( SDL_LockTexture ( texture, NULL, ( void ** ) &pixels, &pitch ) )
    {
       BYTE *src = displayscreen;
 
       for ( y = 0; y < SCREENHEIGHT; y++ )
       {
-         DWORD *row = ( DWORD * )( ( BYTE * ) pixels + y * pitch );
+         DWORD *row = scratch_rgb + y * SCREENWIDTH;
 
          for ( x = 0; x < SCREENWIDTH; x++ )
             row[x] = palette32[*src++];
+      }
+   }
+
+   if ( SDL_LockTexture ( texture, NULL, ( void ** ) &pixels, &pitch ) )
+   {
+      INT pitch_px = pitch / ( INT ) sizeof ( DWORD );
+
+      if ( g_scaler == PLAT_SCALER_ADVMAME2X )
+      {
+         Scale2x ( scratch_rgb, SCREENWIDTH, SCREENHEIGHT, pixels, pitch_px );
+      }
+      else
+      {
+         for ( y = 0; y < SCREENHEIGHT; y++ )
+            memcpy ( ( BYTE * ) pixels + y * pitch,
+                     scratch_rgb + y * SCREENWIDTH,
+                     SCREENWIDTH * sizeof ( DWORD ) );
       }
       SDL_UnlockTexture ( texture );
    }

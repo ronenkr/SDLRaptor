@@ -46,6 +46,13 @@ This configures the project with Ninja into `build/` and compiles it; `build/rap
 alongside the `SDL3.dll` it needs at runtime. `build/` is not tracked in git — delete it any time to force
 a clean reconfigure.
 
+## Command-line options
+- `--data <dir>` — point at a game data directory other than the ones checked automatically (cwd, the exe's
+  own directory, `RAPTOR_DATA` env var, then the `RAPTOR_DATADIR` build default).
+- `--scaler <none|advmame2x>` — pixel-art upscaling filter for the 320x200 output, applied before the final
+  stretch to the window. `advmame2x` (aka Scale2x) sharpens diagonal edges instead of blurring or staying
+  blocky; `none` (default) is a straight nearest-neighbor stretch.
+
 ## Building the original DOS release
 To build all libraries and the exe under DOS use Watcom C 10.0 and TASM 3.1.
 For a build that more closely matches the original exe file v1.2 (without DMX library) you will need the following:

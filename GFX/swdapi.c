@@ -696,25 +696,22 @@ SFIELD *curfld             // INPUT : pointer to current field
 
    if ( trace_this_call )
    {
-      fprintf ( stderr, "[TRACE] SWD_FieldInput: enter, fontid=%d, g_key=0x%02X g_ascii=%d\n",
-                curfld->fontid, g_key, g_ascii );
-      fflush ( stderr );
+      TRACE ( "[TRACE] SWD_FieldInput: enter, fontid=%d, g_key=0x%02X g_ascii=%d\n",
+                curfld->fontid, g_key, g_ascii  );
    }
 
    fld_font = GLB_GetItem ( curfld->fontid );
 
    if ( trace_this_call )
    {
-      fprintf ( stderr, "[TRACE] SWD_FieldInput: GLB_GetItem returned %p\n", fld_font );
-      fflush ( stderr );
+      TRACE ( "[TRACE] SWD_FieldInput: GLB_GetItem returned %p\n", fld_font  );
    }
 
    fontheight = ( ( FONT * ) fld_font )->height;
 
    if ( trace_this_call )
    {
-      fprintf ( stderr, "[TRACE] SWD_FieldInput: fontheight=%d\n", fontheight );
-      fflush ( stderr );
+      TRACE ( "[TRACE] SWD_FieldInput: fontheight=%d\n", fontheight  );
    }
 
    curpos = strlen ( wrkbuf );
@@ -812,17 +809,15 @@ SFIELD *curfld             // INPUT : pointer to current field
 
             if ( trace_this_call )
             {
-               fprintf ( stderr, "[TRACE] SWD_FieldInput: calling GFX_StrPixelLen, wrkbuf='%s' curpos=%d\n",
-                         wrkbuf, curpos );
-               fflush ( stderr );
+               TRACE ( "[TRACE] SWD_FieldInput: calling GFX_StrPixelLen, wrkbuf='%s' curpos=%d\n",
+                         wrkbuf, curpos  );
             }
 
             len = GFX_StrPixelLen ( fld_font, wrkbuf, ( size_t ) curpos + 1 );
 
             if ( trace_this_call )
             {
-               fprintf ( stderr, "[TRACE] SWD_FieldInput: GFX_StrPixelLen returned %d\n", len );
-               fflush ( stderr );
+               TRACE ( "[TRACE] SWD_FieldInput: GFX_StrPixelLen returned %d\n", len  );
             }
 
             if ( len >= curfld->lx )
@@ -839,14 +834,12 @@ SFIELD *curfld             // INPUT : pointer to current field
    {
       if ( trace_this_call )
       {
-         fprintf ( stderr, "[TRACE] SWD_FieldInput: calling SWD_PutField\n" );
-         fflush ( stderr );
+         TRACE ( "[TRACE] SWD_FieldInput: calling SWD_PutField\n"  );
       }
       SWD_PutField ( curwin, curfld );
       if ( trace_this_call )
       {
-         fprintf ( stderr, "[TRACE] SWD_FieldInput: SWD_PutField returned\n" );
-         fflush ( stderr );
+         TRACE ( "[TRACE] SWD_FieldInput: SWD_PutField returned\n"  );
       }
       cur_act = S_UPDATE;
       cur_cmd = C_IDLE;
@@ -854,8 +847,7 @@ SFIELD *curfld             // INPUT : pointer to current field
 
    if ( trace_this_call )
    {
-      fprintf ( stderr, "[TRACE] SWD_FieldInput: exit\n" );
-      fflush ( stderr );
+      TRACE ( "[TRACE] SWD_FieldInput: exit\n"  );
    }
 }
   
@@ -2199,8 +2191,7 @@ SWD_DLG * swd_dlg          // OUTPUT: pointer to info structure
 
    if ( g_trace_first_dialog )
    {
-      fprintf ( stderr, "[TRACE] SWD_Dialog: enter (first-ever call)\n" );
-      fflush ( stderr );
+      TRACE ( "[TRACE] SWD_Dialog: enter (first-ever call)\n"  );
       g_trace_first_dialog = 0;
    }
 
@@ -2217,8 +2208,7 @@ SWD_DLG * swd_dlg          // OUTPUT: pointer to info structure
    trace_this_call = ( g_key != SC_NONE );
    if ( trace_this_call )
    {
-      fprintf ( stderr, "[TRACE] SWD_Dialog: g_key=0x%02X g_ascii=%d\n", g_key, g_ascii );
-      fflush ( stderr );
+      TRACE ( "[TRACE] SWD_Dialog: g_key=0x%02X g_ascii=%d\n", g_key, g_ascii  );
    }
 
    if ( active_window == EMPTY )
@@ -2275,17 +2265,15 @@ SWD_DLG * swd_dlg          // OUTPUT: pointer to info structure
   
    if ( trace_this_call )
    {
-      fprintf ( stderr, "[TRACE] SWD_Dialog: active_field=%d curfld->opt=%d PTR_B1=%d cur_act=%d\n",
-                active_field, curfld->opt, PTR_B1, cur_act );
-      fflush ( stderr );
+      TRACE ( "[TRACE] SWD_Dialog: active_field=%d curfld->opt=%d PTR_B1=%d cur_act=%d\n",
+                active_field, curfld->opt, PTR_B1, cur_act  );
    }
 
    if ( PTR_B1 && cur_act == S_IDLE )
    {
       if ( trace_this_call )
       {
-         fprintf ( stderr, "[TRACE] SWD_Dialog: taking PTR_B1/SWD_CheckMouse branch\n" );
-         fflush ( stderr );
+         TRACE ( "[TRACE] SWD_Dialog: taking PTR_B1/SWD_CheckMouse branch\n"  );
       }
       old_field = active_field;
       if ( SWD_CheckMouse ( curwin->lock, curwin, firstfld ) )
@@ -2325,14 +2313,12 @@ SWD_DLG * swd_dlg          // OUTPUT: pointer to info structure
       {
          if ( trace_this_call )
          {
-            fprintf ( stderr, "[TRACE] SWD_Dialog: calling fldfuncs[%d]\n", curfld->opt );
-            fflush ( stderr );
+            TRACE ( "[TRACE] SWD_Dialog: calling fldfuncs[%d]\n", curfld->opt  );
          }
          fldfuncs[ curfld->opt ] ( curwin, curfld );
          if ( trace_this_call )
          {
-            fprintf ( stderr, "[TRACE] SWD_Dialog: fldfuncs[%d] returned\n", curfld->opt );
-            fflush ( stderr );
+            TRACE ( "[TRACE] SWD_Dialog: fldfuncs[%d] returned\n", curfld->opt  );
          }
 
          testfld = firstfld;

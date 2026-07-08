@@ -13,9 +13,10 @@
 #include <sys/stat.h>
 
 #include "prefapi.h"
+#include "plat.h"
 
 #include "file0001.inc"
-  
+
 #include "raptor.h"
 #include "load.inc"
 
@@ -204,9 +205,8 @@ PLAYEROBJ * in_plr
    BOOL        rval = FALSE;
    INT         handle = -1;
 
-   fprintf ( stderr, "[TRACE] RAP_IsSaveFile: enter, name='%s' callsign='%s'\n",
-             in_plr->name, in_plr->callsign );
-   fflush ( stderr );
+   TRACE ( "[TRACE] RAP_IsSaveFile: enter, name='%s' callsign='%s'\n",
+             in_plr->name, in_plr->callsign  );
 
    for ( loop = 0; loop < MAX_SAVE; loop++ )
    {
@@ -215,13 +215,11 @@ PLAYEROBJ * in_plr
       else
          sprintf ( temp, fmt, loop );
 
-      fprintf ( stderr, "[TRACE] RAP_IsSaveFile: loop=%d opening '%s'\n", loop, temp );
-      fflush ( stderr );
+      TRACE ( "[TRACE] RAP_IsSaveFile: loop=%d opening '%s'\n", loop, temp  );
 
       if ( ( handle = open ( temp, O_RDONLY | O_BINARY ) ) != -1 )
       {
-         fprintf ( stderr, "[TRACE] RAP_IsSaveFile: loop=%d opened, handle=%d\n", loop, handle );
-         fflush ( stderr );
+         TRACE ( "[TRACE] RAP_IsSaveFile: loop=%d opened, handle=%d\n", loop, handle  );
 
          read ( handle, &tp, sizeof ( PLAYEROBJ ) );
          close ( handle );
@@ -236,16 +234,14 @@ PLAYEROBJ * in_plr
       }
       else
       {
-         fprintf ( stderr, "[TRACE] RAP_IsSaveFile: loop=%d open failed\n", loop );
-         fflush ( stderr );
+         TRACE ( "[TRACE] RAP_IsSaveFile: loop=%d open failed\n", loop  );
       }
    }
 
    if ( handle != -1 )
       close ( handle );
 
-   fprintf ( stderr, "[TRACE] RAP_IsSaveFile: exit, rval=%d\n", rval );
-   fflush ( stderr );
+   TRACE ( "[TRACE] RAP_IsSaveFile: exit, rval=%d\n", rval  );
 
    return ( rval );
 }

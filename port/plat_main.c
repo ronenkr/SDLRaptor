@@ -121,6 +121,17 @@ WriteDefaultSetup ( void )
    printf ( "Created default setup.ini\n" );
 }
 
+static void
+ApplyScalerArg ( const char *name )
+{
+   if ( SDL_strcasecmp ( name, "advmame2x" ) == 0 || SDL_strcasecmp ( name, "scale2x" ) == 0 )
+      PLAT_SetScaler ( PLAT_SCALER_ADVMAME2X );
+   else if ( SDL_strcasecmp ( name, "none" ) == 0 )
+      PLAT_SetScaler ( PLAT_SCALER_NONE );
+   else
+      fprintf ( stderr, "--scaler: unknown scaler '%s' (expected: none, advmame2x)\n", name );
+}
+
 int
 main ( int argc, char *argv[] )
 {
@@ -135,6 +146,10 @@ main ( int argc, char *argv[] )
       if ( strcmp ( argv[i], "--data" ) == 0 && i + 1 < argc )
       {
          cli_dir = argv[++i];
+      }
+      else if ( strcmp ( argv[i], "--scaler" ) == 0 && i + 1 < argc )
+      {
+         ApplyScalerArg ( argv[++i] );
       }
       else if ( game_argc < 3 )
       {
