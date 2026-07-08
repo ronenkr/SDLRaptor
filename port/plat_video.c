@@ -112,6 +112,16 @@ PLAT_SCALER scaler
 }
 
 VOID
+PLAT_ToggleFullscreen ( VOID )
+{
+   if ( !window )
+      return;
+
+   SDL_SetWindowFullscreen ( window,
+      ( SDL_GetWindowFlags ( window ) & SDL_WINDOW_FULLSCREEN ) ? false : true );
+}
+
+VOID
 PLAT_CreateWindow ( VOID )
 {
    INT tex_scale = ( g_scaler == PLAT_SCALER_ADVMAME2X ) ? 2 : 1;

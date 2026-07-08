@@ -36,6 +36,7 @@ VOID PLAT_Present ( VOID );               /* convert + render + present    */
 BOOL PLAT_WindowToScreen ( float wx, float wy, INT *sx, INT *sy );
 /* must be called before PLAT_CreateWindow (i.e. from main(), via --scaler) */
 VOID PLAT_SetScaler ( PLAT_SCALER scaler );
+VOID PLAT_ToggleFullscreen ( VOID );      /* Alt+Enter, see plat_pump.c    */
 
 /* --- plat_pump.c -------------------------------------------------------- */
 VOID PLAT_Pump ( VOID );                  /* events + services + present   */
@@ -50,5 +51,8 @@ VOID PLAT_RunServices ( VOID );           /* fire due TSM services         */
 union SDL_Event;
 VOID KBD_HandleEvent ( const union SDL_Event *ev );
 VOID PTR_HandleEvent ( const union SDL_Event *ev );
+
+/* --- ptr_blit.c: SDL gamepad, called from ptr_sdl.c's PTR_Init --------- */
+BOOL PTR_IsJoyPresent ( VOID );
 
 #endif /* _PLAT_H */

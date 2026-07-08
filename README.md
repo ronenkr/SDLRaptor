@@ -53,16 +53,6 @@ a clean reconfigure.
   stretch to the window. `advmame2x` (aka Scale2x) sharpens diagonal edges instead of blurring or staying
   blocky; `none` (default) is a straight nearest-neighbor stretch.
 
-## Building the original DOS release
-To build all libraries and the exe under DOS use Watcom C 10.0 and TASM 3.1.
-For a build that more closely matches the original exe file v1.2 (without DMX library) you will need the following:
-```
-AUDIOLIB: Watcom C 10.0 and TASM 3.1
-APODMX: A compatible version of Watcom C32 
-GFX: Watcom C 9.5b and TASM 3.1
-SOURCE: Watcom C 10.0 and TASM 3.1
-```
-
 ## License
 DOS Raptor is distributed under the GPL Version 2 or newer, see [LICENSE](https://github.com/skynettx/dosraptor/blob/master/LICENSE).
 

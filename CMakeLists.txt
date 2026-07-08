@@ -171,6 +171,9 @@ endif()
 target_compile_definitions(raptor PRIVATE
     RAPTOR_DEFAULT_DATADIR="${RAPTOR_DATADIR}"
     LIBVER_ASSREV=19960108L)
+# F5 from the VS IDE otherwise starts in the solution dir, not next to the
+# GLB files copied alongside raptor.exe below.
+set_property(TARGET raptor PROPERTY VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:raptor>")
 
 # the port supplies the real main(); the game's becomes raptor_main
 set_property(SOURCE SOURCE/RAP.C APPEND PROPERTY COMPILE_DEFINITIONS main=raptor_main)

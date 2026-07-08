@@ -31,7 +31,7 @@
 static opl3_chip        g_opl;
 static SDL_AudioStream *g_stream      = NULL;
 static SDL_AudioDeviceID g_device     = 0;
-static int               g_opl_addr   = 0;
+static uint16_t           g_opl_addr   = 0;
 static int               g_ready      = 0;
 
 static void

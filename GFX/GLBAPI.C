@@ -166,16 +166,16 @@ INT	permissions				// INPUT : file access permissions
 * create a file name and attempt to open it local first, then if it
 * fails use the exe path and try again.
 */
-   sprintf( filename, "%s%04u.glb", prefix, filenum );
+   sprintf( filename, "%s%04u.GLB", prefix, filenum );
    if ( ( handle = open( filename, permissions ) ) == -1 )
 	{
-      sprintf( filename, "%s%s%04u.glb", exePath, prefix, filenum );
+      sprintf( filename, "%s%s%04u.GLB", exePath, prefix, filenum );
    	if ( ( handle = open( filename, permissions ) ) == -1 )
 		{
 			if ( return_on_failure )
 				return -1;
 
-         sprintf( filename, "%s%04u.glb", prefix, filenum );
+         sprintf( filename, "%s%04u.GLB", prefix, filenum );
    	   EXIT_Error ("GLB_FindFile: %s, Error #%d,%s",
 								filename, errno, strerror( errno ) );
 		}

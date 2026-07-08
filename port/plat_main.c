@@ -31,6 +31,7 @@
 #endif
 
 extern int raptor_main ( int argc, char *argv[] );
+extern void PLAT_InstallCrashHandler ( void );
 
 static int
 HasGameData ( const char *dir )
@@ -157,12 +158,10 @@ main ( int argc, char *argv[] )
       }
    }
 
-   extern void PLAT_InstallCrashHandler ( void );
-
    PLAT_InstallCrashHandler ();
    setvbuf ( stdout, NULL, _IONBF, 0 );   /* keep the printf trail exact */
 
-   if ( !SDL_Init ( SDL_INIT_VIDEO | SDL_INIT_AUDIO ) )
+   if ( !SDL_Init ( SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD ) )
    {
       fprintf ( stderr, "SDL_Init failed: %s\n", SDL_GetError () );
       return 1;

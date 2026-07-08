@@ -21,6 +21,7 @@
 #include "al_midi.h"
 #include "mus2mid.h"
 #include "audio_internal.h"
+#include "plat.h"
 
 extern int AL_Init ( int soundcard );
 
@@ -78,7 +79,7 @@ MUS_RegisterSong ( void *data )
    FILE *mus, *mid;
    long  midlen;
 
-   fprintf ( stderr, "[TRACE] MUS_RegisterSong data=%p\n", data ); fflush ( stderr );
+   TRACE ( "[TRACE] MUS_RegisterSong data=%p\n", data  );
 
    if ( g_mus_data )
    {
@@ -154,7 +155,7 @@ MUS_RegisterSong ( void *data )
 int
 MUS_UnregisterSong ( int handle )
 {
-   fprintf ( stderr, "[TRACE] MUS_UnregisterSong data=%p\n", g_mus_data ); fflush ( stderr );
+   TRACE ( "[TRACE] MUS_UnregisterSong data=%p\n", g_mus_data  );
 
    if ( g_mus_data )
    {
@@ -176,14 +177,14 @@ MUS_PlaySong ( int handle, int volume )
 {
    int status;
 
-   fprintf ( stderr, "[TRACE] MUS_PlaySong data=%p\n", g_mus_data ); fflush ( stderr );
+   TRACE ( "[TRACE] MUS_PlaySong data=%p\n", g_mus_data  );
 
    if ( !g_mus_data )
       return 1;
 
    EnsureMidiFuncsInstalled ();
    status = MIDI_PlaySong ( g_mus_data, g_mus_loop );
-   fprintf ( stderr, "[TRACE] MIDI_PlaySong returned %d\n", status ); fflush ( stderr );
+   TRACE ( "[TRACE] MIDI_PlaySong returned %d\n", status  );
    if ( status == MIDI_Ok )
    {
       g_mus_active  = 1;
@@ -197,7 +198,7 @@ MUS_PlaySong ( int handle, int volume )
 int
 MUS_FadeInSong ( int handle, int ms )
 {
-   fprintf ( stderr, "[TRACE] MUS_FadeInSong data=%p ms=%d\n", g_mus_data, ms ); fflush ( stderr );
+   TRACE ( "[TRACE] MUS_FadeInSong data=%p ms=%d\n", g_mus_data, ms  );
 
    if ( !g_mus_data )
       return 1;
@@ -262,9 +263,9 @@ MUS_QrySongPlaying ( int handle )
 int
 MUS_StopSong ( int handle )
 {
-   fprintf ( stderr, "[TRACE] MUS_StopSong data=%p\n", g_mus_data ); fflush ( stderr );
+   TRACE ( "[TRACE] MUS_StopSong data=%p\n", g_mus_data  );
    MIDI_StopSong ();
-   fprintf ( stderr, "[TRACE] MIDI_StopSong done\n" ); fflush ( stderr );
+   TRACE ( "[TRACE] MIDI_StopSong done\n"  );
    g_mus_active  = 0;
    g_mus_fadeout = 0;
    g_fade.active = 0;

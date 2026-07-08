@@ -80,16 +80,8 @@ PRIVATE INT    g_addx = 0;
 PRIVATE INT    g_addy = 0;
 
 
-/*------------------------------------------------------------------------
-PTR_IsJoyPresent() - Checks to see if joystick is present
-  ------------------------------------------------------------------------*/
-BOOL
-PTR_IsJoyPresent(
-VOID
-)
-{
-   return ( FALSE );    /* SDL gamepad support arrives in a later pass */
-}
+/* PTR_IsJoyPresent() is implemented in port/ptr_blit.c, alongside the rest
+   of the SDL gamepad wiring (PTR_ReadJoyStick, PTR_JoyButtonMask). */
 
 /*------------------------------------------------------------------------
    PTR_HandleEvent() - SDL mouse event -> DOS mouse driver state

@@ -72,6 +72,17 @@ PLAT_Pump ( VOID )
                break;
 
             case SDL_EVENT_KEY_DOWN:
+               /* Alt+Enter: fullscreen toggle, not a game key - swallow it
+                  here so it never reaches KBD_HandleEvent/keyboard[]. */
+               if ( ev.key.scancode == SDL_SCANCODE_RETURN
+                    && ( ev.key.mod & SDL_KMOD_ALT ) && !ev.key.repeat )
+               {
+                  PLAT_ToggleFullscreen ();
+                  break;
+               }
+               KBD_HandleEvent ( ( const union SDL_Event * ) &ev );
+               break;
+
             case SDL_EVENT_KEY_UP:
                KBD_HandleEvent ( ( const union SDL_Event * ) &ev );
                break;
