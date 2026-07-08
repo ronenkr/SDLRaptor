@@ -92,7 +92,6 @@ typedef enum { I_NORM, I_TOUPPER, I_NUMERIC }   INPUTOPT;
 #define MAX_WINDOWS 12
 #define MAX_FONTS 2
   
-extern INT  active_field;
 extern BOOL g_button_flag;
 extern BOOL usekb_flag;
 
@@ -536,4 +535,3 @@ INT * y,                   // OUTPUT: y
 INT * lx,                  // OUTPUT: width
 INT * ly                   // OUTPUT: height
 );
-

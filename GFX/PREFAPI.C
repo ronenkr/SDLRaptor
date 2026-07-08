@@ -1,7 +1,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef _WIN32
 #include <io.h>
+#else
+#include <unistd.h>
+#endif
 
 #include "prefapi.h"
 
@@ -508,4 +512,4 @@ INI_DeletePreference(
     return( WritePrivateProfileString( section, option, NULL, ProfilePath ) );
 }
 
-
+

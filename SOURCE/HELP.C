@@ -2,9 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>
+#ifdef _WIN32
 #include <io.h>
+#else
+#include <unistd.h>
+#endif
 #include <dos.h>
-  
+
 #include "raptor.h"
 #include "helpwin.inc"
 #include "file0000.inc"
@@ -157,4 +161,3 @@ CHAR * strpage             // INPUT : GLB string item
   
    return;
 }
-

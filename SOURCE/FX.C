@@ -1,9 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <dos.h>
+#ifdef _WIN32
 #include <io.h>
+#else
+#include <unistd.h>
+#endif
 #include <string.h>
-  
+
 #include "raptor.h"
 #include "prefapi.h"
   

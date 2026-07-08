@@ -45,7 +45,7 @@ char *instr,               // INPUT : message string ot format
 ...                        // INPUT : args for instr
 )
 {
-   extern void PLAT_PrintBacktrace ( void );   /* port/crash_win.c */
+   extern void PLAT_PrintBacktrace ( void );   /* port/crash_win.c or port/crash_posix.c */
    va_list args;
 
    va_start ( args, instr );
@@ -95,4 +95,3 @@ VOID
   
    exit(0);
 }
-

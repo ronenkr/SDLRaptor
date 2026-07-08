@@ -20,6 +20,7 @@ PRIVATE Uint64 last_pump_ns  = 0;
 PRIVATE INT    last_tick     = -1;
 PRIVATE INT    spin_count    = 0;
 PRIVATE INT    presented_tick = -1;
+PRIVATE BOOL   quitting       = FALSE;
 
 PRIVATE INT
 CurrentTick ( VOID )
@@ -54,8 +55,20 @@ PLAT_Pump ( VOID )
          switch ( ev.type )
          {
             case SDL_EVENT_QUIT:
-               in_pump = FALSE;
-               EXIT_Clean ();
+               /* EXIT_Clean -> ShutDown -> WIN_Order shows an exit screen
+                  that itself waits on input via GFX_FrameCount/PLAT_Pump,
+                  so it must be reentered here (hence dropping in_pump)
+                  rather than deferred - but that also means a second QUIT
+                  event (closing the window again while that screen is up)
+                  would recurse into EXIT_Clean while the first call is
+                  still mid-teardown, corrupting window/GLB state. Only
+                  ever act on the first one. */
+               if ( !quitting )
+               {
+                  quitting = TRUE;
+                  in_pump = FALSE;
+                  EXIT_Clean ();
+               }
                break;
 
             case SDL_EVENT_KEY_DOWN:

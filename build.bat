@@ -22,7 +22,10 @@ if "%CONFIG%"=="" set "CONFIG=RelWithDebInfo"
 call "%VCVARSALL%" x64
 if errorlevel 1 exit /b 1
 
-"%CMAKE%" -S "%~dp0." -B "%BUILD_DIR%" -G Ninja -DCMAKE_BUILD_TYPE=%CONFIG%
+set "SDL3_ARG="
+if not "%SDL3_ROOT%"=="" set "SDL3_ARG=-DCMAKE_PREFIX_PATH=%SDL3_ROOT%"
+
+"%CMAKE%" -S "%~dp0." -B "%BUILD_DIR%" -G Ninja -DCMAKE_BUILD_TYPE=%CONFIG% %SDL3_ARG%
 if errorlevel 1 exit /b 1
 
 "%CMAKE%" --build "%BUILD_DIR%"

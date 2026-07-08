@@ -3,10 +3,14 @@
 #include <fcntl.h>
 #include <string.h>
 #include <conio.h>
+#ifdef _WIN32
 #include <io.h>
+#else
+#include <unistd.h>
+#endif
 #include <dos.h>
-#include <sys\types.h>
-#include <sys\stat.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #include "prefapi.h"
 
@@ -198,7 +202,11 @@ PLAYEROBJ * in_plr
    CHAR        temp[41];
    INT         loop;
    BOOL        rval = FALSE;
-   INT         handle;
+   INT         handle = -1;
+
+   fprintf ( stderr, "[TRACE] RAP_IsSaveFile: enter, name='%s' callsign='%s'\n",
+             in_plr->name, in_plr->callsign );
+   fflush ( stderr );
 
    for ( loop = 0; loop < MAX_SAVE; loop++ )
    {
@@ -207,9 +215,18 @@ PLAYEROBJ * in_plr
       else
          sprintf ( temp, fmt, loop );
 
+      fprintf ( stderr, "[TRACE] RAP_IsSaveFile: loop=%d opening '%s'\n", loop, temp );
+      fflush ( stderr );
+
       if ( ( handle = open ( temp, O_RDONLY | O_BINARY ) ) != -1 )
       {
+         fprintf ( stderr, "[TRACE] RAP_IsSaveFile: loop=%d opened, handle=%d\n", loop, handle );
+         fflush ( stderr );
+
          read ( handle, &tp, sizeof ( PLAYEROBJ ) );
+         close ( handle );
+         handle = -1;
+
          if ( strcmpi ( tp.name, in_plr->name ) == 0 &&
               strcmpi ( tp.callsign, in_plr->callsign ) == 0 )
          {
@@ -217,9 +234,18 @@ PLAYEROBJ * in_plr
             break;
          }
       }
+      else
+      {
+         fprintf ( stderr, "[TRACE] RAP_IsSaveFile: loop=%d open failed\n", loop );
+         fflush ( stderr );
+      }
    }
 
-   close ( handle );
+   if ( handle != -1 )
+      close ( handle );
+
+   fprintf ( stderr, "[TRACE] RAP_IsSaveFile: exit, rval=%d\n", rval );
+   fflush ( stderr );
 
    return ( rval );
 }
@@ -673,4 +699,3 @@ VOID
 {
    return ( g_setup_ini );
 }
-

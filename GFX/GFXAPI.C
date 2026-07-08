@@ -19,7 +19,9 @@
 #include <stdlib.h>
 #include <conio.h>
 #include <dos.h>
+#ifdef _WIN32
 #include <malloc.h>
+#endif
 #include <string.h>
   
 #include "gfxapi.h"
@@ -1692,4 +1694,3 @@ BOOL see_thru              // INPUT : true = masked, false = put block
    }
   
 }
-

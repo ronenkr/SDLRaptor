@@ -9,13 +9,6 @@
 #include "file0003.inc"
 #include "file0004.inc"
 
-typedef enum
-{
-   GROUND,
-   MID_AIR,
-   HIGH_AIR
-}GFLAG;
-
 typedef struct ANIMLIB_S
 {
    DWORD             item;
@@ -493,4 +486,3 @@ VOID
          GFX_PutSprite ( pic, cur->dx, cur->dy );
    }
 }
-

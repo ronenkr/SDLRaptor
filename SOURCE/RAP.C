@@ -38,11 +38,15 @@
 #include <dos.h>
 #include <fcntl.h>
 #include <conio.h>
+#ifdef _WIN32
 #include <io.h>
-#include <sys\types.h>
-#include <sys\stat.h>
-#include <ctype.h>
 #include <malloc.h>
+#else
+#include <unistd.h>
+#endif
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <ctype.h>
 
 #include "raptor.h"
 #include "prefapi.h"
@@ -1689,4 +1693,3 @@ main ( INT argc, CHAR * argv[] )
 }
 
 
-

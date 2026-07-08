@@ -85,6 +85,28 @@ void delay ( unsigned int milliseconds );
 #define R_OK 4
 #endif
 
+/* strupr/stricmp/filelength/chsize/ltoa are MSVC <string.h>/<io.h>/
+   <stdlib.h> extensions with no POSIX equivalent name; GLBAPI.C and
+   PREFAPI.C use them. Provided by doscompat.c. */
+#ifndef _WIN32
+char *strupr ( char *s );
+int   stricmp ( const char *a, const char *b );
+int   strcmpi ( const char *a, const char *b );
+long  filelength ( int handle );
+int   chsize ( int handle, long size );
+char *ltoa ( long value, char *str, int radix );
+
+/* min/max: MIDI.C/AL_MIDI.C call these as bare functions with no
+   declaration anywhere in the source tree - resolved on MSVC by some
+   UCRT <stdlib.h> extension. No POSIX equivalent; define as macros. */
+#ifndef max
+#define max( a, b )   ( ( a ) > ( b ) ? ( a ) : ( b ) )
+#endif
+#ifndef min
+#define min( a, b )   ( ( a ) < ( b ) ? ( a ) : ( b ) )
+#endif
+#endif
+
 #ifdef __cplusplus
 }
 #endif

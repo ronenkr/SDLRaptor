@@ -19,10 +19,14 @@
 #include <string.h>
 #include <dos.h>
 #include <fcntl.h>
+#ifdef _WIN32
 #include <malloc.h>
 #include <io.h>
-#include <sys\types.h>
-#include <sys\stat.h>
+#else
+#include <unistd.h>
+#endif
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <ctype.h>
 
 // #include <windows.h>
@@ -857,4 +861,3 @@ DWORD length               // INPUT : length of buffer
    }
    close (handle);
 }
-

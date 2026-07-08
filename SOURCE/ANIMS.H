@@ -1,12 +1,19 @@
 #ifndef _ANIMAPI
 #define _ANIMAPI
 
-typedef enum 
+typedef enum
 {
-   A_NORM,   
-   A_MOVEUP,   
-   A_MOVEDOWN   
+   A_NORM,
+   A_MOVEUP,
+   A_MOVEDOWN
 }ANIM_DIR;
+
+typedef enum
+{
+   GROUND,
+   MID_AIR,
+   HIGH_AIR
+}GFLAG;
 
 #define A_LARGE_GROUND_EXPLO1  0
 #define A_SMALL_GROUND_EXPLO   1
@@ -55,7 +62,7 @@ INT
 ANIMS_Register (
    DWORD item,             // INPUT : lumpnum of first frame
    INT   numframes,        // INPUT : number of frames
-   BOOL  groundflag,       // INPUT : on the ground = TRUE
+   GFLAG groundflag,       // INPUT : GROUND/MID_AIR/HIGH_AIR
    BOOL  playerflag,       // INPUT : follow player movements
    BOOL  transparent,      // INPUT : Transparent ( LIGHT )
    ANIM_DIR adir           // INPUT : Anim Direction
@@ -151,4 +158,3 @@ INT y                      // INPUT : y position
 );
 
 #endif
-

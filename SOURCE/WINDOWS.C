@@ -665,9 +665,12 @@ VOID
    INT      py;
    INT      lx;
    INT      ly;
-  
+
+   fprintf ( stderr, "[TRACE] WIN_AskDiff: enter\n" ); fflush ( stderr );
+
    KBD_Clear();
    ask_window = SWD_InitWindow ( ASKDIFF_SWD );
+   fprintf ( stderr, "[TRACE] WIN_AskDiff: SWD_InitWindow done, window=%d\n", ask_window ); fflush ( stderr );
    SWD_SetActiveField ( ask_window, OKREG_MED );
 
    SWD_ShowAllWindows();
@@ -722,6 +725,8 @@ VOID
 
    askdiff_exit:
 
+   fprintf ( stderr, "[TRACE] WIN_AskDiff: exit, rval=%d\n", rval ); fflush ( stderr );
+
    SWD_DestroyWindow ( ask_window );
    GFX_DisplayUpdate();
 
@@ -747,13 +752,17 @@ VOID
    INT         loop;
    INT         diff;
 
+   fprintf ( stderr, "[TRACE] WIN_Register: enter\n" ); fflush ( stderr );
+
    PTR_DrawCursor ( FALSE );
 
    SND_PlaySong ( HANGAR_MUS, TRUE, TRUE );
+   fprintf ( stderr, "[TRACE] WIN_Register: SND_PlaySong(HANGAR_MUS) returned\n" ); fflush ( stderr );
 
    KBD_Clear();
    GFX_FadeOut ( 0, 0, 0, 2 );
-  
+   fprintf ( stderr, "[TRACE] WIN_Register: GFX_FadeOut done\n" ); fflush ( stderr );
+
    memset ( &tp, 0, sizeof ( PLAYEROBJ ) );
    tp.sweapon     = EMPTY;
    tp.diff[0]     = DIFF_2;
@@ -763,19 +772,28 @@ VOID
    tp.id_pic      = 0;
 
    window = SWD_InitWindow ( REGISTER_SWD );
+   fprintf ( stderr, "[TRACE] WIN_Register: SWD_InitWindow done, window=%d\n", window ); fflush ( stderr );
    SWD_SetFieldItem ( window, REG_IDPIC, sid_pics [ tp.id_pic ] );
    SWD_SetActiveField ( window, REG_NAME );
    SWD_ShowAllWindows();
    GFX_DisplayUpdate();
-  
+
    GFX_FadeIn ( palette, 16 );
+   fprintf ( stderr, "[TRACE] WIN_Register: GFX_FadeIn done, entering mainloop\n" ); fflush ( stderr );
   
    SWD_SetFieldPtr ( window, REG_VIEWID );
    PTR_DrawCursor ( TRUE );
   
    mainloop:
-  
+
    SWD_Dialog ( &dlg );
+
+   if ( dlg.cur_act != S_IDLE || dlg.keypress != SC_NONE )
+   {
+      fprintf ( stderr, "[TRACE] WIN_Register: after SWD_Dialog: cur_act=%d cur_cmd=%d field=%d keypress=%d viewactive=%d\n",
+                dlg.cur_act, dlg.cur_cmd, dlg.field, dlg.keypress, dlg.viewactive );
+      fflush ( stderr );
+   }
 
    if ( KBD_Key ( SC_ESC ) )
    {
@@ -883,7 +901,10 @@ VOID
             case REG_NAME:
                SWD_GetFieldText ( window, REG_NAME, tp.name );
                if ( strlen ( tp.name ) && dlg.keypress == SC_ENTER )
+               {
+                  fprintf ( stderr, "[TRACE] WIN_Register: name '%s' entered, switching to CALLSIGN\n", tp.name ); fflush ( stderr );
                   SWD_SetActiveField ( window, REG_CALLSIGN );
+               }
                SWD_ShowAllWindows();
                GFX_DisplayUpdate();
                break;
@@ -913,6 +934,7 @@ VOID
                   }
                   else
                   {
+                     fprintf ( stderr, "[TRACE] WIN_Register: callsign '%s' accepted, exiting\n", tp.callsign ); fflush ( stderr );
                      rval = TRUE;
                      goto reg_exit;
                   }
@@ -925,6 +947,8 @@ VOID
    goto mainloop;
   
    reg_exit:
+
+   fprintf ( stderr, "[TRACE] WIN_Register: reg_exit reached, rval=%d\n", rval ); fflush ( stderr );
 
    SWD_GetFieldText ( window, REG_NAME, tp.name );
    SWD_GetFieldText ( window, REG_CALLSIGN, tp.callsign );
@@ -943,7 +967,9 @@ VOID
    diff = 1;
    if ( rval )
    {
+     fprintf ( stderr, "[TRACE] WIN_Register: calling WIN_AskDiff\n" ); fflush ( stderr );
      diff = WIN_AskDiff();
+     fprintf ( stderr, "[TRACE] WIN_Register: WIN_AskDiff returned %d\n", diff ); fflush ( stderr );
      if ( diff >= 0 )
      {
          ingameflag = FALSE;
@@ -1014,6 +1040,8 @@ VOID
    if ( rval )
       ingameflag = FALSE;
 
+   fprintf ( stderr, "[TRACE] WIN_Register: returning rval=%d\n", rval ); fflush ( stderr );
+
    return ( rval );
 }
 
@@ -1040,7 +1068,10 @@ VOID
    DWORD    item;
    INT      local_cnt = FRAME_COUNT;
    INT      pic_cnt = 0;
-  
+   INT      trace_first = 1;
+
+   fprintf ( stderr, "[TRACE] WIN_Hangar: enter\n" ); fflush ( stderr );
+
    PTR_DrawCursor ( FALSE );
 
    KBD_Clear();
@@ -1053,17 +1084,21 @@ VOID
    }
 
    GFX_FadeOut ( 0, 0, 0, 2 );
-  
+   fprintf ( stderr, "[TRACE] WIN_Hangar: GFX_FadeOut done\n" ); fflush ( stderr );
+
    window = SWD_InitMasterWindow ( HANGAR_SWD );
+   fprintf ( stderr, "[TRACE] WIN_Hangar: SWD_InitMasterWindow done, window=%d\n", window ); fflush ( stderr );
 
    item = SWD_GetFieldItem ( window, HANG_PIC );
 
    SND_PlaySong ( HANGAR_MUS, TRUE, TRUE );
+   fprintf ( stderr, "[TRACE] WIN_Hangar: SND_PlaySong(HANGAR_MUS) returned\n" ); fflush ( stderr );
 
    SWD_ShowAllWindows();
    GFX_DisplayUpdate();
-  
+
    GFX_FadeIn ( palette, 16 );
+   fprintf ( stderr, "[TRACE] WIN_Hangar: GFX_FadeIn done, entering mainloop\n" ); fflush ( stderr );
 
    if ( control != I_MOUSE )
       kflag = TRUE;
@@ -1106,17 +1141,38 @@ VOID
    else
    {
       local_cnt = FRAME_COUNT;
+      if ( trace_first )
+      {
+         fprintf ( stderr, "[TRACE] WIN_Hangar: entering FRAME_COUNT spin, local_cnt=%d\n", local_cnt );
+         fflush ( stderr );
+      }
       while ( FRAME_COUNT == local_cnt );
+      if ( trace_first )
+      {
+         fprintf ( stderr, "[TRACE] WIN_Hangar: FRAME_COUNT spin done\n" );
+         fflush ( stderr );
+      }
    }
 
+   if ( trace_first )
+   {
+      fprintf ( stderr, "[TRACE] WIN_Hangar: calling SWD_Dialog\n" );
+      fflush ( stderr );
+   }
    SWD_Dialog ( &dlg );
+   if ( trace_first )
+   {
+      fprintf ( stderr, "[TRACE] WIN_Hangar: SWD_Dialog returned\n" );
+      fflush ( stderr );
+      trace_first = 0;
+   }
 
    if ( KBD_Key ( SC_ESC ) )
    {
       opt = -99;
       goto hangar_exit;
    }
-  
+
    if ( KBD_Key ( SC_X ) && KBD_Key ( SC_ALT ) )
    {
       WIN_AskExit();
@@ -1678,7 +1734,10 @@ VOID
 
    ingameflag = TRUE;
 
+   fprintf ( stderr, "[TRACE] WIN_MainLoop: enter\n" ); fflush ( stderr );
+
    SND_PlaySong ( HANGAR_MUS, TRUE, TRUE );
+   fprintf ( stderr, "[TRACE] WIN_MainLoop: SND_PlaySong(HANGAR_MUS) returned\n" ); fflush ( stderr );
 
    for (;;)
    {
@@ -1686,7 +1745,9 @@ VOID
       {
          if ( rval == EMPTY )
          {
+            fprintf ( stderr, "[TRACE] WIN_MainLoop: calling WIN_Hangar\n" ); fflush ( stderr );
             rval = WIN_Hangar();
+            fprintf ( stderr, "[TRACE] WIN_MainLoop: WIN_Hangar returned %d\n", rval ); fflush ( stderr );
          }
 
          switch ( rval )
@@ -2058,8 +2119,13 @@ VOID
          switch ( dlg.field )
          {
             case MAIN_NEW:
+               fprintf ( stderr, "[TRACE] WIN_MainMenu: calling WIN_Register\n" ); fflush ( stderr );
                if ( WIN_Register() )
+               {
+                  fprintf ( stderr, "[TRACE] WIN_MainMenu: WIN_Register true, menu_exit\n" ); fflush ( stderr );
                   goto menu_exit;
+               }
+               fprintf ( stderr, "[TRACE] WIN_MainMenu: WIN_Register false, staying in menu\n" ); fflush ( stderr );
                SWD_ShowAllWindows();
                GFX_DisplayUpdate();
                GFX_FadeIn ( palette, 16 );
@@ -2138,4 +2204,3 @@ VOID
    return;
 }
 
-

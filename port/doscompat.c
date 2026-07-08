@@ -4,9 +4,83 @@
 #include <time.h>
 #include <dos.h>
 #include <conio.h>
+#ifndef _WIN32
+#include <ctype.h>
+#include <string.h>
+#include <strings.h>
+#include <unistd.h>
+#endif
 
 void ( *compat_opl_write )( int port, unsigned char value ) = 0;
 unsigned char compat_gameport_state = 0xF0;   /* all buttons released */
+
+#ifndef _WIN32
+char *
+strupr ( char *s )
+{
+   char *p = s;
+
+   while ( *p )
+   {
+      *p = ( char ) toupper ( ( unsigned char ) *p );
+      p++;
+   }
+   return s;
+}
+
+int
+stricmp ( const char *a, const char *b )
+{
+   return strcasecmp ( a, b );
+}
+
+int
+strcmpi ( const char *a, const char *b )
+{
+   return strcasecmp ( a, b );
+}
+
+long
+filelength ( int handle )
+{
+   long cur = lseek ( handle, 0, SEEK_CUR );
+   long len = lseek ( handle, 0, SEEK_END );
+
+   lseek ( handle, cur, SEEK_SET );
+   return len;
+}
+
+int
+chsize ( int handle, long size )
+{
+   return ftruncate ( handle, size );
+}
+
+char *
+ltoa ( long value, char *str, int radix )
+{
+   char   buf[8 * sizeof ( long ) + 2];   /* worst case: base 2 + sign + NUL */
+   char  *p = buf + sizeof ( buf ) - 1;
+   int    negative = value < 0 && radix == 10;
+   unsigned long uval = negative ? ( unsigned long ) ( -value )
+                                  : ( unsigned long ) value;
+
+   *p = 0;
+   do
+   {
+      int digit = ( int ) ( uval % ( unsigned long ) radix );
+
+      *--p = ( char ) ( digit < 10 ? '0' + digit : 'a' + digit - 10 );
+      uval /= ( unsigned long ) radix;
+   } while ( uval );
+
+   if ( negative )
+      *--p = '-';
+
+   memmove ( str, p, ( size_t ) ( buf + sizeof ( buf ) - p ) );
+   return str;
+}
+#endif
 
 int
 int386 ( int inter_no, const union REGS *in_regs, union REGS *out_regs )

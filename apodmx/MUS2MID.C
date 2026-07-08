@@ -442,7 +442,7 @@ static bool ReadMusHeader(FILE *file, musheader *header)
 //
 // Returns 0 on success or 1 on failure.
 
-bool mus2mid(FILE *musinput, FILE *midioutput, int rate, int adlibhack)
+int mus2mid(FILE *musinput, FILE *midioutput, int rate, int adlibhack)
 {
     // Header for the MUS file
     musheader musfileheader;

@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <dos.h>
 #include <string.h>
+#ifdef _WIN32
 #include <malloc.h>
+#endif
 #include <ctype.h>
   
 #include "dpmiapi.h"
@@ -12,6 +14,7 @@
 #include "glbapi.h"
 #include "kbdapi.h"
 #include "swdapi.h"
+#include "plat.h"
 
 PUBLIC  BOOL      usekb_flag     = FALSE;
   
@@ -586,14 +589,14 @@ SFIELD * curfld            // INPUT : pointer to field data
 
       if ( curfld->bstatus == DOWN )
       {
-         if ( h->type == GSPRITE && h )
+         if ( h && h->type == GSPRITE )
             GFX_ShadeShape ( DARK, (BYTE*)h, fld_x, fld_y );
          else
             GFX_ShadeArea ( DARK, fld_x, fld_y, curfld->lx, curfld->ly );
       }
       else if ( curfld->bstatus == UP )
       {
-         if ( h->type == GSPRITE && h )
+         if ( h && h->type == GSPRITE )
             GFX_ShadeShape ( LIGHT, (BYTE*)h, fld_x, fld_y );
          else
             GFX_ShadeArea ( LIGHT, fld_x, fld_y, curfld->lx, curfld->ly );
@@ -684,14 +687,36 @@ SFIELD *curfld             // INPUT : pointer to current field
 )
 {
    PRIVATE INT    curpos   = 0;
-   VOID *         fld_font = GLB_GetItem ( curfld->fontid );
+   VOID *         fld_font;
    BOOL           flag     = FALSE;
    CHAR     *     wrkbuf   = ( ( CHAR * )curfld ) + curfld->txtoff;
    INT            fontheight;
    INT            len;
-  
+   int            trace_this_call = ( g_key != SC_NONE );
+
+   if ( trace_this_call )
+   {
+      fprintf ( stderr, "[TRACE] SWD_FieldInput: enter, fontid=%d, g_key=0x%02X g_ascii=%d\n",
+                curfld->fontid, g_key, g_ascii );
+      fflush ( stderr );
+   }
+
+   fld_font = GLB_GetItem ( curfld->fontid );
+
+   if ( trace_this_call )
+   {
+      fprintf ( stderr, "[TRACE] SWD_FieldInput: GLB_GetItem returned %p\n", fld_font );
+      fflush ( stderr );
+   }
+
    fontheight = ( ( FONT * ) fld_font )->height;
-  
+
+   if ( trace_this_call )
+   {
+      fprintf ( stderr, "[TRACE] SWD_FieldInput: fontheight=%d\n", fontheight );
+      fflush ( stderr );
+   }
+
    curpos = strlen ( wrkbuf );
   
    switch ( g_key )
@@ -784,26 +809,54 @@ SFIELD *curfld             // INPUT : pointer to current field
             }
             else
                wrkbuf[curpos] = (CHAR)0;
-  
+
+            if ( trace_this_call )
+            {
+               fprintf ( stderr, "[TRACE] SWD_FieldInput: calling GFX_StrPixelLen, wrkbuf='%s' curpos=%d\n",
+                         wrkbuf, curpos );
+               fflush ( stderr );
+            }
+
             len = GFX_StrPixelLen ( fld_font, wrkbuf, ( size_t ) curpos + 1 );
-  
+
+            if ( trace_this_call )
+            {
+               fprintf ( stderr, "[TRACE] SWD_FieldInput: GFX_StrPixelLen returned %d\n", len );
+               fflush ( stderr );
+            }
+
             if ( len >= curfld->lx )
                curpos--;
-  
+
             wrkbuf [ curpos + 1 ] = 0;
-  
+
             flag = TRUE;
          }
          break;
    }
-  
+
    if ( flag )
    {
+      if ( trace_this_call )
+      {
+         fprintf ( stderr, "[TRACE] SWD_FieldInput: calling SWD_PutField\n" );
+         fflush ( stderr );
+      }
       SWD_PutField ( curwin, curfld );
+      if ( trace_this_call )
+      {
+         fprintf ( stderr, "[TRACE] SWD_FieldInput: SWD_PutField returned\n" );
+         fflush ( stderr );
+      }
       cur_act = S_UPDATE;
       cur_cmd = C_IDLE;
    }
 
+   if ( trace_this_call )
+   {
+      fprintf ( stderr, "[TRACE] SWD_FieldInput: exit\n" );
+      fflush ( stderr );
+   }
 }
   
 /*------------------------------------------------------------------------
@@ -2115,6 +2168,8 @@ VOID
 /***************************************************************************
    SWD_Dialog () - performs all window in/out/diaplay/move stuff
  ***************************************************************************/
+static int g_trace_first_dialog = 1;
+
 VOID
 SWD_Dialog (
 SWD_DLG * swd_dlg          // OUTPUT: pointer to info structure
@@ -2130,7 +2185,25 @@ SWD_DLG * swd_dlg          // OUTPUT: pointer to info structure
    INT         sy;
    INT         loop;
    BOOL        update;
-  
+   int         trace_this_call;
+
+   /* port: on DOS, keyboard/mouse state updated via a hardware ISR
+      completely independent of whatever the game's code was doing, so
+      dialog loops that don't touch FRAME_COUNT (WIN_Register, WIN_AskDiff,
+      HELP_Win, RAP_LoadWin, STORE_Enter, ...) never needed to "wait" for
+      input - it just showed up. Under SDL nothing is delivered until
+      someone polls for it, and SWD_Dialog is the one call every such loop
+      makes every iteration without exception, so it pumps here rather than
+      patching every affected loop individually. */
+   PLAT_Pump ();
+
+   if ( g_trace_first_dialog )
+   {
+      fprintf ( stderr, "[TRACE] SWD_Dialog: enter (first-ever call)\n" );
+      fflush ( stderr );
+      g_trace_first_dialog = 0;
+   }
+
    _disable();
    update = FALSE;
    g_key = KBD_LASTSCAN;
@@ -2138,7 +2211,16 @@ SWD_DLG * swd_dlg          // OUTPUT: pointer to info structure
    KBD_LASTSCAN = SC_NONE;
    KBD_LASTASCII = SC_NONE;
    _enable();
-  
+
+   /* trace every call that's actually carrying a real keypress, not just
+      the harmless idle frames where g_key is SC_NONE */
+   trace_this_call = ( g_key != SC_NONE );
+   if ( trace_this_call )
+   {
+      fprintf ( stderr, "[TRACE] SWD_Dialog: g_key=0x%02X g_ascii=%d\n", g_key, g_ascii );
+      fflush ( stderr );
+   }
+
    if ( active_window == EMPTY )
       return;
   
@@ -2191,8 +2273,20 @@ SWD_DLG * swd_dlg          // OUTPUT: pointer to info structure
    if ( active_field == EMPTY )
       return;
   
+   if ( trace_this_call )
+   {
+      fprintf ( stderr, "[TRACE] SWD_Dialog: active_field=%d curfld->opt=%d PTR_B1=%d cur_act=%d\n",
+                active_field, curfld->opt, PTR_B1, cur_act );
+      fflush ( stderr );
+   }
+
    if ( PTR_B1 && cur_act == S_IDLE )
    {
+      if ( trace_this_call )
+      {
+         fprintf ( stderr, "[TRACE] SWD_Dialog: taking PTR_B1/SWD_CheckMouse branch\n" );
+         fflush ( stderr );
+      }
       old_field = active_field;
       if ( SWD_CheckMouse ( curwin->lock, curwin, firstfld ) )
       {
@@ -2229,8 +2323,18 @@ SWD_DLG * swd_dlg          // OUTPUT: pointer to info structure
    {
       if ( fldfuncs [ curfld->opt ] && cur_act == S_IDLE )
       {
+         if ( trace_this_call )
+         {
+            fprintf ( stderr, "[TRACE] SWD_Dialog: calling fldfuncs[%d]\n", curfld->opt );
+            fflush ( stderr );
+         }
          fldfuncs[ curfld->opt ] ( curwin, curfld );
-  
+         if ( trace_this_call )
+         {
+            fprintf ( stderr, "[TRACE] SWD_Dialog: fldfuncs[%d] returned\n", curfld->opt );
+            fflush ( stderr );
+         }
+
          testfld = firstfld;
          for ( loop = 0; loop < curwin->numflds; loop++, testfld++ )
          {
@@ -2917,4 +3021,4 @@ INT * ly                   // OUTPUT: height
    return ( curfld->lx );
 }
   
-
+

@@ -1,14 +1,10 @@
 cmake_minimum_required(VERSION 3.24)
 project(raptor LANGUAGES C)
 
-# SDL3 SDK location (prebuilt VC development libraries)
-set(RAPTOR_SDL3_ROOT "D:/Programs/SDL3-3.4.12" CACHE PATH "SDL3 SDK root")
-list(APPEND CMAKE_PREFIX_PATH "${RAPTOR_SDL3_ROOT}")
-
 set(RAPTOR_DATADIR "C:/Projects/SDLRaptor/data" CACHE PATH "Default game data directory")
 
-if(NOT MSVC)
-    message(FATAL_ERROR "This port currently targets MSVC (VS Build Tools).")
+if(NOT MSVC AND NOT UNIX)
+    message(FATAL_ERROR "This port targets MSVC (Windows) or a UNIX-like GCC/Clang toolchain (Linux).")
 endif()
 
 # CMake treats uppercase .C as C++; the DOS sources are C. Force the language.
@@ -17,9 +13,48 @@ function(raptor_mark_as_c)
 endfunction()
 
 # ---------------------------------------------------------------------------
+# The original DOS/Watcom sources (GFX, SOURCE, audiolib/SOURCE, apodmx) use
+# uppercase filenames but lowercase #include "foo.h" directives throughout -
+# relying on Windows' case-insensitive filesystem. On a case-sensitive
+# filesystem (Linux, ...) build a parallel tree of lowercase symlinks so
+# those includes still resolve, without renaming the historical uppercase
+# sources themselves (which are still referenced by their real names in the
+# source lists below).
+# ---------------------------------------------------------------------------
+function(raptor_case_shim_dir SRC_DIR OUT_VAR)
+    if(WIN32)
+        set(${OUT_VAR} "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}" PARENT_SCOPE)
+        return()
+    endif()
+    set(shim_dir "${CMAKE_BINARY_DIR}/case_shim/${SRC_DIR}")
+    file(REMOVE_RECURSE "${shim_dir}")
+    file(MAKE_DIRECTORY "${shim_dir}")
+    file(GLOB entries "${CMAKE_CURRENT_SOURCE_DIR}/${SRC_DIR}/*")
+    foreach(entry ${entries})
+        if(NOT IS_DIRECTORY "${entry}")
+            get_filename_component(fname "${entry}" NAME)
+            string(TOLOWER "${fname}" fname_lower)
+            file(CREATE_LINK "${entry}" "${shim_dir}/${fname_lower}" SYMBOLIC)
+        endif()
+    endforeach()
+    set(${OUT_VAR} "${shim_dir}" PARENT_SCOPE)
+endfunction()
+
+raptor_case_shim_dir(GFX             RAPTOR_GFX_INCDIR)
+raptor_case_shim_dir(SOURCE          RAPTOR_SOURCE_INCDIR)
+raptor_case_shim_dir(audiolib/SOURCE RAPTOR_AUDIOLIB_INCDIR)
+raptor_case_shim_dir(apodmx          RAPTOR_APODMX_INCDIR)
+
+# ---------------------------------------------------------------------------
 # rapcore: portable pieces of the original GFX library + compat layer.
 # Shared by the game and the headless tools.
 # ---------------------------------------------------------------------------
+if(WIN32)
+    set(RAPTOR_CRASH_SOURCE port/crash_win.c)
+else()
+    set(RAPTOR_CRASH_SOURCE port/crash_posix.c)
+endif()
+
 set(RAPCORE_SOURCES
     GFX/GLBAPI.C
     GFX/VMEMAPI.C
@@ -27,21 +62,27 @@ set(RAPCORE_SOURCES
     GFX/exitapi.c
     port/doscompat.c
     port/dpmiapi_win.c
-    # here (not in the raptor target) because it includes <windows.h>,
-    # which the SOURCE include dir would shadow with the game's WINDOWS.H
-    port/crash_win.c
+    # here (not in the raptor target) because crash_win.c includes
+    # <windows.h>, which the SOURCE include dir would shadow with the
+    # game's WINDOWS.H
+    ${RAPTOR_CRASH_SOURCE}
 )
 raptor_mark_as_c(${RAPCORE_SOURCES})
 add_library(rapcore STATIC ${RAPCORE_SOURCES})
 # port/compat must shadow the MSVC dos.h/conio.h
 target_include_directories(rapcore BEFORE PUBLIC port/compat)
-target_include_directories(rapcore PUBLIC GFX port)
-target_compile_definitions(rapcore PUBLIC
-    _CRT_SECURE_NO_WARNINGS
-    _CRT_NONSTDC_NO_WARNINGS
-)
-# /J: plain char is unsigned, matching the Watcom default the game was built with
-target_compile_options(rapcore PUBLIC /J)
+target_include_directories(rapcore PUBLIC ${RAPTOR_GFX_INCDIR} port)
+if(MSVC)
+    target_compile_definitions(rapcore PUBLIC
+        _CRT_SECURE_NO_WARNINGS
+        _CRT_NONSTDC_NO_WARNINGS
+    )
+    # /J: plain char is unsigned, matching the Watcom default the game was built with
+    target_compile_options(rapcore PUBLIC /J)
+else()
+    # -funsigned-char: same rationale as /J above
+    target_compile_options(rapcore PUBLIC -funsigned-char)
+endif()
 
 # ---------------------------------------------------------------------------
 # glbtool: headless GLB archive inspector (milestone M0 verification)
@@ -122,8 +163,11 @@ raptor_mark_as_c(${GAME_SOURCES} ${GFX_SOURCES} ${AUDIOLIB_SOURCES})
 add_executable(raptor ${GAME_SOURCES} ${GFX_SOURCES} ${PORT_SOURCES}
                        ${AUDIOLIB_SOURCES} ${AUDIO_SOURCES})
 target_include_directories(raptor PRIVATE
-    SOURCE apodmx audio audio/opl audiolib/SOURCE)
+    ${RAPTOR_SOURCE_INCDIR} ${RAPTOR_APODMX_INCDIR} audio audio/opl ${RAPTOR_AUDIOLIB_INCDIR})
 target_link_libraries(raptor PRIVATE rapcore SDL3::SDL3)
+if(UNIX)
+    target_link_libraries(raptor PRIVATE m)
+endif()
 target_compile_definitions(raptor PRIVATE
     RAPTOR_DEFAULT_DATADIR="${RAPTOR_DATADIR}"
     LIBVER_ASSREV=19960108L)
@@ -134,3 +178,12 @@ set_property(SOURCE SOURCE/RAP.C APPEND PROPERTY COMPILE_DEFINITIONS main=raptor
 add_custom_command(TARGET raptor POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
             $<TARGET_FILE:SDL3::SDL3-shared> $<TARGET_FILE_DIR:raptor>)
+
+# Copy the game's GLB archives next to raptor.exe, so it finds them via its
+# own-directory fallback (port/plat_main.c) with no --data/RAPTOR_DATA needed.
+file(GLOB RAPTOR_GLB_FILES "${CMAKE_SOURCE_DIR}/data/*.GLB" "${CMAKE_SOURCE_DIR}/data/*.glb")
+if(RAPTOR_GLB_FILES)
+    add_custom_command(TARGET raptor POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                ${RAPTOR_GLB_FILES} $<TARGET_FILE_DIR:raptor>)
+endif()

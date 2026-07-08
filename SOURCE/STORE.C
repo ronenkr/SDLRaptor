@@ -531,12 +531,14 @@ VOID
                SND_Patch ( FX_SWEP, 127 );
                if ( max_items )
                   cur_item++;
+               while ( IMS_IsAck() );
                break;
 
             case STOR_PREV:
                SND_Patch ( FX_SWEP, 127 );
                if ( max_items )
                   cur_item--;
+               while ( IMS_IsAck() );
                break;
 
             case STOR_BUY:
@@ -624,4 +626,3 @@ VOID
    GFX_SetPalette ( palette, 0 );
 }
 
-

@@ -2,15 +2,19 @@
 #include <stdlib.h>
 #include <string.h>
 #include <conio.h>
+#ifdef _WIN32
 #include <io.h>
+#else
+#include <unistd.h>
+#endif
 #include <dos.h>
-  
+
 #include "raptor.h"
 #include "prefapi.h"
 #include "file0000.inc"
 #include "file0001.inc"
 
-PUBLIC INT buttons[4] = { FALSE, FALSE, FALSE, FALSE };
+PUBLIC BOOL buttons[4] = { FALSE, FALSE, FALSE, FALSE };
 
 PUBLIC ITYPE control = I_MOUSE;
 
@@ -889,4 +893,3 @@ VOID
    j_lookup[3]    = INI_GetPreferenceLong ( "JoyStick", "MegaFire", 3L ); 
 }
 
-

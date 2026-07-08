@@ -179,7 +179,6 @@ SND_InitSound (
 VOID
 );
 
-extern CONTROL control;
 extern      INT   music_volume;
 extern      INT   fx_volume;
 extern      BOOL  fx_flag;
@@ -214,4 +213,3 @@ extern      BOOL  dig_flag;
 
 
 
-

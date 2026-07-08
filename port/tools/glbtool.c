@@ -13,9 +13,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
+#ifdef _WIN32
 #include <io.h>
 #include <direct.h>
-#include <sys\stat.h>
+#else
+#include <unistd.h>
+#define _chdir chdir
+#endif
 
 #include "types.h"
 #include "glbapi.h"

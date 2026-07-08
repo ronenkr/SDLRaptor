@@ -147,6 +147,10 @@ KBD_HandleEvent ( const union SDL_Event *uev )
 
    if ( ev->type == SDL_EVENT_KEY_UP )
    {
+      fprintf ( stderr, "[TRACE] KBD_HandleEvent: KEY_UP sdl=%d dos=0x%02X\n",
+                ev->key.scancode, key );
+      fflush ( stderr );
+
       keyboard[key] = FALSE;
 
       if ( key == SC_CAPS_LOCK )
@@ -154,6 +158,10 @@ KBD_HandleEvent ( const union SDL_Event *uev )
    }
    else
    {
+      fprintf ( stderr, "[TRACE] KBD_HandleEvent: KEY_DOWN sdl=%d dos=0x%02X repeat=%d\n",
+                ev->key.scancode, key, ev->key.repeat );
+      fflush ( stderr );
+
       kbd_ack = TRUE;
       lastscan = key;
       keyboard[key] = TRUE;
@@ -163,6 +171,10 @@ KBD_HandleEvent ( const union SDL_Event *uev )
          lastascii = ASCIINames[key];
       if ( key == SC_CAPS_LOCK )
          capslock = TRUE;
+
+      fprintf ( stderr, "[TRACE] KBD_HandleEvent: lastscan=0x%02X lastascii=%d\n",
+                lastscan, lastascii );
+      fflush ( stderr );
    }
 }
 

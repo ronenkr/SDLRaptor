@@ -12,8 +12,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _WIN32
 #include <direct.h>
 #include <io.h>
+#else
+#include <unistd.h>
+#include <limits.h>
+#define _access access
+#define _chdir  chdir
+#define _MAX_PATH PATH_MAX
+#endif
 #include <SDL3/SDL.h>
 
 #include "plat.h"
@@ -29,7 +37,7 @@ HasGameData ( const char *dir )
 {
    char probe[_MAX_PATH];
 
-   snprintf ( probe, sizeof ( probe ), "%s\\FILE0000.GLB", dir );
+   snprintf ( probe, sizeof ( probe ), "%s/FILE0000.GLB", dir );
    return _access ( probe, 0 ) == 0;
 }
 

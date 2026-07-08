@@ -26,15 +26,21 @@ keep the data somewhere else.
 Requirements:
 - MSVC (Visual Studio or the Visual Studio Build Tools) with the C++ workload, which also provides the
   bundled CMake and Ninja used by the build script.
-- [SDL3](https://github.com/libsdl-org/SDL) development libraries. Set `RAPTOR_SDL3_ROOT` in
-  [CMakeLists.txt](CMakeLists.txt) (or pass `-DRAPTOR_SDL3_ROOT=<path>` to `cmake`) to point at your SDL3 SDK.
+- [SDL3](https://github.com/libsdl-org/SDL) development libraries, discoverable via CMake's normal
+  `find_package(SDL3 CONFIG)` search (a system install on Linux is found automatically). On Windows,
+  point CMake at an unpacked SDL3 devel package by setting the `SDL3_ROOT` environment variable before
+  running the build script, or by passing `-DCMAKE_PREFIX_PATH=<path>` / `-DSDL3_DIR=<path>/cmake`
+  directly to `cmake`.
 
-Run [build.bat](build.bat) from the project root:
+Run [build.bat](build.bat) from the project root (targets the Visual Studio Build Tools):
 
 ```
 build.bat            REM builds RelWithDebInfo into .\build
 build.bat Debug      REM or pass a CMake build type
 ```
+
+Or [build-vs2026.bat](build-vs2026.bat) if you have Visual Studio 2026 Community installed instead — same
+usage and output.
 
 This configures the project with Ninja into `build/` and compiles it; `build/raptor.exe` is produced
 alongside the `SDL3.dll` it needs at runtime. `build/` is not tracked in git — delete it any time to force
