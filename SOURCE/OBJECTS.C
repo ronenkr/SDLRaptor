@@ -17,6 +17,10 @@ PRIVATE INT     obj_cnt;
 PUBLIC OBJ_LIB  obj_lib [ S_LAST_OBJECT ];
 PUBLIC OBJ  *   p_objs  [ S_LAST_OBJECT ];
 
+/* --newfeatures per-type stacking caps (Plasma Guns is uncapped) */
+#define NEWFEATURES_MAX_MINIGUN  5
+#define NEWFEATURES_MAX_TURRET   3
+
 PRIVATE BOOL   objuse_flag;
 PRIVATE INT    think_cnt;
 
@@ -733,6 +737,26 @@ OBJ_TYPE type               // INPUT : OBJ type
       }
    }
 
+   // == "newfeatures" console command: stack repeat buys of these three onto the
+   //    already-equipped node (like onlyflag items) instead of an orphaned
+   //    duplicate that OBJS_Use()/p_objs[] would never see ==============
+   if ( type == S_TURRET || type == S_PLASMA_GUNS || type == S_MINI_GUN )
+   {
+      extern BOOL g_newfeatures;
+
+      if ( g_newfeatures && p_objs [ type ] != NUL )
+      {
+         if ( type == S_MINI_GUN && p_objs [ type ]->num >= NEWFEATURES_MAX_MINIGUN )
+            return ( OBJ_SHIPFULL );
+
+         if ( type == S_TURRET && p_objs [ type ]->num >= NEWFEATURES_MAX_TURRET )
+            return ( OBJ_SHIPFULL );
+
+         p_objs [ type ]->num++;
+         return ( OBJ_GOTIT );
+      }
+   }
+
    cur = OBJS_Get();
    if ( !cur ) return ( OBJ_SHIPFULL );
   
@@ -1074,6 +1098,23 @@ OBJ_TYPE type              // INPUT : OBJ type
    {
       if ( OBJS_IsEquip ( type ) )
          return ( FALSE );
+   }
+
+   if ( type == S_TURRET || type == S_PLASMA_GUNS || type == S_MINI_GUN )
+   {
+      extern BOOL g_newfeatures;
+
+      if ( !g_newfeatures && OBJS_IsEquip ( type ) )
+         return ( FALSE );
+
+      if ( g_newfeatures )
+      {
+         if ( type == S_MINI_GUN && OBJS_GetAmt ( type ) >= NEWFEATURES_MAX_MINIGUN )
+            return ( FALSE );
+
+         if ( type == S_TURRET && OBJS_GetAmt ( type ) >= NEWFEATURES_MAX_TURRET )
+            return ( FALSE );
+      }
    }
 
    if ( !reg_flag )

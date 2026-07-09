@@ -144,12 +144,37 @@ ESHOT * sh
    memset ( sh, 0, sizeof ( ESHOT ) );
   
    sh->next = free_eshot;
-  
+
    free_eshot = sh;
-  
+
    return ( next );
 }
-  
+
+/*-------------------------------------------------------------------------*
+ESHOT_RemoveByEnemy () - Removes any in-flight shots fired by `enemy` -
+called from ENEMY_Remove() before it recycles the SPRITE_SHIP, so a shot
+still referencing it via `en` (ES_LASER reads en->x/en->y every frame while
+in flight) can't be left pointing at a memset/reused struct.
+ *-------------------------------------------------------------------------*/
+VOID
+ESHOT_RemoveByEnemy (
+SPRITE_SHIP * enemy
+)
+{
+   ESHOT * shot = first_eshot.next;
+   ESHOT * next;
+
+   while ( shot != &last_eshot )
+   {
+      next = shot->next;
+
+      if ( shot->en == enemy )
+         ESHOT_Remove ( shot );
+
+      shot = next;
+   }
+}
+
 /***************************************************************************
 ESHOT_Init () - Inits ESHOT system and clears link list
  ***************************************************************************/

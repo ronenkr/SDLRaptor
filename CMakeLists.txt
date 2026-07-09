@@ -111,7 +111,6 @@ set(GAME_SOURCES
     SOURCE/RAP.C
     SOURCE/SHADOWS.C
     SOURCE/SHOTS.C
-    SOURCE/STORE.C
     SOURCE/TILE.C
     SOURCE/WINDOWS.C
 )
@@ -131,6 +130,7 @@ set(PORT_SOURCES
     port/ptr_blit.c
     port/kbd_sdl.c
     port/ptr_sdl.c
+    port/shop_ui.c
 )
 # Compiled unmodified from the original engine (audiolib's FM synth +
 # MIDI sequencer, plus apodmx's MUS->MIDI converter); everything else in

@@ -39,11 +39,17 @@ VOID
    last_shots.next  = NUL;
   
    free_shots       = shots;
-  
+
    memset ( shots, 0, sizeof ( shots ) );
-  
-   for ( loop = 0; loop < MAX_SHOTS*1; loop++ )
-      shots[ loop ].next = &shots [ loop + 1 ];
+
+   /* NUL-terminate the free list at the last slot - it used to link one
+      past the array end (&shots[MAX_SHOTS]), which SHOTS_Get()'s `if
+      (!free_shots)` check can't catch (it's a non-NUL, out-of-bounds
+      pointer), so fully draining the pool read/wrote past shots[].
+      Harmless before "newfeatures" (single-shot-per-frame rarely got near
+      MAX_SHOTS=70), but stacked volleys exhaust it easily. */
+   for ( loop = 0; loop < MAX_SHOTS; loop++ )
+      shots[ loop ].next = ( loop < MAX_SHOTS - 1 ) ? &shots [ loop + 1 ] : NUL;
 }
   
 /*-------------------------------------------------------------------------*
@@ -572,6 +578,34 @@ VOID
    slib->ht          = S_GRALL;
 }
   
+#define MAX_VOLLEY 10
+
+/***************************************************************************
+ShotVolleyCount () - "newfeatures" console command: how many simultaneous
+shots a stacked Turret/Plasma Guns/Mini Gun purchase should fire this volley
+(1 if the feature is off, or the type isn't stacked past one).
+ ***************************************************************************/
+PRIVATE INT
+ShotVolleyCount (
+OBJ_TYPE type
+)
+{
+   extern BOOL g_newfeatures;
+   INT         owned;
+
+   if ( !g_newfeatures )
+      return ( 1 );
+
+   owned = OBJS_GetAmt ( type );
+
+   if ( owned < 1 )
+      owned = 1;
+   if ( owned > MAX_VOLLEY )
+      owned = MAX_VOLLEY;
+
+   return ( owned );
+}
+
 /***************************************************************************
 SHOTS_PlayerShoot() - Shoots the specified weapon
  ***************************************************************************/
@@ -586,8 +620,7 @@ OBJ_TYPE type              // INPUT : OBJECT TYPE
    extern SPRITE_SHIP    last_enemy;
    SHOTS *               cur;
    SHOT_LIB *            lib  = &shot_lib [ type ];
-   SPRITE_SHIP *         enemy;
-  
+
    if ( type == EMPTY )
       EXIT_Error ("SHOTS_PlayerShoot() type = EMPTY  ");
 
@@ -641,21 +674,51 @@ OBJ_TYPE type              // INPUT : OBJECT TYPE
          break;
   
       case S_PLASMA_GUNS:
-         if ( !gus_flag )
-            SND_Patch ( FX_GUN, 127 );
-         cur->lib       = &shot_lib [ type  ];
-         cur->curframe  = random ( lib->numframes );
-         cur->delayflag = lib->delayflag;
-         cur->speed     = lib->speed;
-         cur->x         = player_cx;
-         cur->y         = player_cy;
-         cur->move.x    = cur->x;
-         cur->move.y    = cur->y;
-         cur->move.x2   = cur->x;
-         cur->move.y2   = 0;
-         cur->startx    = player_cx;
-         cur->starty    = player_cy;
+      {
+         // "newfeatures": N owned = N simultaneous shots, each at a
+         // distinct target (homing, unlike the default straight-fire shot)
+         INT           volley   = ShotVolleyCount ( type );
+         SPRITE_SHIP * targets[MAX_VOLLEY];
+         INT           ntargets = ( volley > 1 ) ? ENEMY_GetDistinct ( volley, targets ) : 0;
+         INT           vi;
+
+         for ( vi = 0; vi < volley; vi++ )
+         {
+            if ( vi > 0 )
+            {
+               cur = SHOTS_Get();
+               if ( cur == NUL ) break;
+            }
+
+            if ( !gus_flag )
+               SND_Patch ( FX_GUN, 127 );
+            cur->lib       = &shot_lib [ type  ];
+            cur->curframe  = random ( lib->numframes );
+            cur->delayflag = lib->delayflag;
+            cur->speed     = lib->speed;
+            cur->x         = player_cx;
+            cur->y         = player_cy;
+            cur->move.x    = cur->x;
+            cur->move.y    = cur->y;
+            cur->startx    = player_cx;
+            cur->starty    = player_cy;
+
+            if ( ntargets > 0 )
+            {
+               SPRITE_SHIP * tgt = targets [ vi % ntargets ];
+
+               cur->move.x2 = tgt->x + random ( tgt->width ) - 1;
+               cur->move.y2 = tgt->y + tgt->hly + random ( tgt->height ) - 1;
+               InitMobj ( &cur->move );
+            }
+            else
+            {
+               cur->move.x2 = cur->x;
+               cur->move.y2 = 0;
+            }
+         }
          break;
+      }
   
       case S_MICRO_MISSLE:
          if ( !gus_flag )
@@ -723,54 +786,98 @@ OBJ_TYPE type              // INPUT : OBJECT TYPE
          break;
   
       case S_MINI_GUN:
-         enemy = ENEMY_GetRandom();
-         if ( enemy == NUL )
+      {
+         // "newfeatures": N owned = N simultaneous homing shots, each
+         // at a distinct target (falls back to a single ENEMY_GetRandom()
+         // call, identical to the feature-off behavior, when volley == 1)
+         INT           volley   = ShotVolleyCount ( type );
+         SPRITE_SHIP * targets[MAX_VOLLEY];
+         INT           ntargets = ( volley > 1 ) ? ENEMY_GetDistinct ( volley, targets ) : 0;
+         INT           vi;
+
+         for ( vi = 0; vi < volley; vi++ )
          {
-            SHOTS_Remove ( cur );
-            break;
+            SPRITE_SHIP * tgt;
+
+            if ( vi > 0 )
+            {
+               cur = SHOTS_Get();
+               if ( cur == NUL ) break;
+            }
+
+            tgt = ( ntargets > 0 ) ? targets [ vi % ntargets ] : ENEMY_GetRandom();
+            if ( tgt == NUL )
+            {
+               SHOTS_Remove ( cur );
+               break;
+            }
+
+            if ( !gus_flag )
+               SND_Patch ( FX_GUN, 127 );
+            cur->curframe  = random ( lib->numframes );
+            cur->lib       = &shot_lib [ type  ];
+            cur->delayflag = lib->delayflag;
+            cur->speed     = lib->speed;
+            cur->x         = player_cx;
+            cur->y         = player_cy;
+            cur->move.x    = cur->x;
+            cur->move.y    = cur->y;
+            cur->move.x2   = tgt->x + random ( tgt->width ) - 1;
+            cur->move.y2   = tgt->y + tgt->hly + random ( tgt->height ) - 1;
+            cur->startx    = player_cx;
+            cur->starty    = player_cy;
+            InitMobj ( &cur->move );
          }
-         if ( !gus_flag )
-            SND_Patch ( FX_GUN, 127 );
-         cur->curframe  = random ( lib->numframes );
-         cur->lib       = &shot_lib [ type  ];
-         cur->delayflag = lib->delayflag;
-         cur->speed     = lib->speed;
-         cur->x         = player_cx;
-         cur->y         = player_cy;
-         cur->move.x    = cur->x;
-         cur->move.y    = cur->y;
-         cur->move.x2   = enemy->x + random ( enemy->width ) - 1;
-         cur->move.y2   = enemy->y + enemy->hly + random ( enemy->height ) - 1;
-         cur->startx    = player_cx;
-         cur->starty    = player_cy;
-         InitMobj ( &cur->move );
          break;
+      }
   
       case S_TURRET:
-         enemy = ENEMY_GetRandomAir();
-         if ( enemy == NUL )
+      {
+         // "newfeatures": N owned = N simultaneous beams, each at a
+         // distinct air target (falls back to a single ENEMY_GetRandomAir()
+         // call, identical to the feature-off behavior, when volley == 1)
+         INT           volley   = ShotVolleyCount ( type );
+         SPRITE_SHIP * targets[MAX_VOLLEY];
+         INT           ntargets = ( volley > 1 ) ? ENEMY_GetDistinctAir ( volley, targets ) : 0;
+         INT           vi;
+
+         for ( vi = 0; vi < volley; vi++ )
          {
-            SHOTS_Remove ( cur );
-            SND_Patch ( FX_NOSHOOT, 127 );
-            break;
+            SPRITE_SHIP * tgt;
+
+            if ( vi > 0 )
+            {
+               cur = SHOTS_Get();
+               if ( cur == NUL ) break;
+            }
+
+            tgt = ( ntargets > 0 ) ? targets [ vi % ntargets ] : ENEMY_GetRandomAir();
+            if ( tgt == NUL )
+            {
+               SHOTS_Remove ( cur );
+               SND_Patch ( FX_NOSHOOT, 127 );
+               break;
+            }
+
+            SND_Patch ( FX_TURRET, 127 );
+            cur->lib       = &shot_lib [ type  ];
+            tgt->hits     -= lib->hits;
+            cur->curframe  = 0;
+            cur->delayflag = lib->delayflag;
+            cur->speed     = lib->speed;
+            cur->x         = player_cx;
+            cur->y         = player_cy;
+            cur->move.x    = tgt->move.x + random ( tgt->width ) - 1;
+            cur->move.y    = tgt->move.y + random ( tgt->height ) - 1;
+            cur->move.x2   = player_cx;
+            cur->move.y2   = player_cy;
+            cur->startx    = player_cx;
+            cur->starty    = player_cy;
+            InitMobj ( &cur->move );
+            ANIMS_StartAnim ( A_LASER_BLAST, cur->move.x, cur->move.y );
          }
-         SND_Patch ( FX_TURRET, 127 );
-         cur->lib       = &shot_lib [ type  ];
-         enemy->hits   -= lib->hits;
-         cur->curframe  = 0;
-         cur->delayflag = lib->delayflag;
-         cur->speed     = lib->speed;
-         cur->x         = player_cx;
-         cur->y         = player_cy;
-         cur->move.x    = enemy->move.x + random ( enemy->width ) - 1;
-         cur->move.y    = enemy->move.y + random ( enemy->height ) - 1;
-         cur->move.x2   = player_cx;
-         cur->move.y2   = player_cy;
-         cur->startx    = player_cx;
-         cur->starty    = player_cy;
-         InitMobj ( &cur->move );
-         ANIMS_StartAnim ( A_LASER_BLAST, cur->move.x, cur->move.y );
          break;
+      }
   
       case S_MISSLE_PODS:
          SND_Patch ( FX_GUN, 127 );

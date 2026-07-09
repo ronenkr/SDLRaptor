@@ -33,6 +33,10 @@
 extern int raptor_main ( int argc, char *argv[] );
 extern void PLAT_InstallCrashHandler ( void );
 
+/* SOURCE/RAP.C - set here (before raptor_main runs) by the --newfeatures
+   command-line flag; see OBJECTS.C/SHOTS.C for what it unlocks. */
+extern BOOL g_newfeatures;
+
 static int
 HasGameData ( const char *dir )
 {
@@ -91,6 +95,27 @@ ResolveDataDir ( const char *argv0, const char *cli_dir )
    /* leave cwd alone; the game prints its own data-missing message */
 }
 
+/* %APPDATA%\SDLRaptor\Raptor\ on Windows - stable regardless of where the
+   exe/data directory ends up, and survives a `build/` wipe (see plat.h). */
+CHAR *
+PLAT_GetSaveDir ( void )
+{
+   static char save_dir[_MAX_PATH] = "";
+
+   if ( !save_dir[0] )
+   {
+      char *pref = SDL_GetPrefPath ( "SDLRaptor", "Raptor" );
+
+      if ( pref )
+      {
+         strncpy ( save_dir, pref, sizeof ( save_dir ) - 1 );
+         SDL_free ( pref );
+      }
+   }
+
+   return save_dir;
+}
+
 static void
 WriteDefaultSetup ( void )
 {
@@ -125,9 +150,10 @@ WriteDefaultSetup ( void )
 static void
 ApplyScalerArg ( const char *name )
 {
-   if ( SDL_strcasecmp ( name, "advmame2x" ) == 0 || SDL_strcasecmp ( name, "scale2x" ) == 0 )
+   if ( SDL_strcasecmp ( name, "advmame2x" ) == 0 || SDL_strcasecmp ( name, "scale2x" ) == 0 ){
       PLAT_SetScaler ( PLAT_SCALER_ADVMAME2X );
-   else if ( SDL_strcasecmp ( name, "none" ) == 0 )
+      fprintf ( stderr, "--scaler: advmame2x \n");
+   }else if ( SDL_strcasecmp ( name, "none" ) == 0 )
       PLAT_SetScaler ( PLAT_SCALER_NONE );
    else
       fprintf ( stderr, "--scaler: unknown scaler '%s' (expected: none, advmame2x)\n", name );
@@ -151,6 +177,12 @@ main ( int argc, char *argv[] )
       else if ( strcmp ( argv[i], "--scaler" ) == 0 && i + 1 < argc )
       {
          ApplyScalerArg ( argv[++i] );
+      }
+      else if ( strcmp ( argv[i], "--newfeatures" ) == 0 )
+      {
+         g_newfeatures = TRUE;
+         printf ( "--newfeatures: on (Turret/Plasma Guns/Mini Gun can be "
+                  "bought repeatedly and fire in a multi-target volley)\n" );
       }
       else if ( game_argc < 3 )
       {

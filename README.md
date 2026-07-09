@@ -52,6 +52,17 @@ a clean reconfigure.
 - `--scaler <none|advmame2x>` — pixel-art upscaling filter for the 320x200 output, applied before the final
   stretch to the window. `advmame2x` (aka Scale2x) sharpens diagonal edges instead of blurring or staying
   blocky; `none` (default) is a straight nearest-neighbor stretch.
+- `--newfeatures` — lets the Supplies shop sell more than one Auto Track Laser Turret (up to 3), Auto Track
+  Mini Gun (up to 5), or Plasma Guns (uncapped). Owning more than one of a type makes it fire that many shots
+  at once in flight, each aiming at a different on-screen enemy (sharing targets only once there are fewer
+  enemies than shots). Off by default; normal one-of-each behavior is unchanged without this flag.
+
+## Window and the shop screen
+The game defaults to a 640x480 window, an exact 2x nearest-neighbor doubling of the original 320x200/240
+picture (still resizable, and still governed by `--scaler` for the low-res picture itself). The "Supplies"
+shop screen is the one exception: it's drawn natively at 640x480 (its own pixel buffer, not just a bigger
+picture of the 320x200 one), showing every buyable/sellable item at once in a scrollable list instead of
+the original one-item-at-a-time carousel, reusing the existing sprite/font assets doubled 2x.
 
 ## License
 DOS Raptor is distributed under the GPL Version 2 or newer, see [LICENSE](https://github.com/skynettx/dosraptor/blob/master/LICENSE).

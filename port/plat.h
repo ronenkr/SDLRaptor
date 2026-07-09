@@ -38,6 +38,22 @@ BOOL PLAT_WindowToScreen ( float wx, float wy, INT *sx, INT *sy );
 VOID PLAT_SetScaler ( PLAT_SCALER scaler );
 VOID PLAT_ToggleFullscreen ( VOID );      /* Alt+Enter, see plat_pump.c    */
 
+/* --- plat_main.c --------------------------------------------------------
+   Stable, writable, per-user directory for CHARnnnn.FIL pilot saves
+   (%APPDATA%\SDLRaptor\Raptor\ on Windows, via SDL_GetPrefPath) -
+   deliberately NOT the game-data directory found by ResolveDataDir, which
+   can vary between runs (cwd, exe dir, RAPTOR_DATA, or the build-time
+   default) and, when it resolves to a build output directory, can be wiped
+   by a clean rebuild - saves must not depend on any of that. */
+CHAR *PLAT_GetSaveDir ( VOID );
+
+/* --- shop_ui.c: parallel native 640x480 presentation path -------------- */
+VOID PLAT_ShopBegin ( VOID );             /* switch to 640x480 logical size */
+VOID PLAT_ShopPresent ( BYTE *buf640x480 );
+VOID PLAT_ShopEnd ( VOID );               /* restore 320x240 logical size   */
+/* window x/y -> 640x480 screen coords; only valid between Begin/End */
+BOOL PLAT_ShopWindowToScreen ( float wx, float wy, INT *sx, INT *sy );
+
 /* --- plat_pump.c -------------------------------------------------------- */
 VOID PLAT_Pump ( VOID );                  /* events + services + present   */
 INT  GFX_FrameCount ( VOID );             /* 70 Hz tick, pumps + anti-spin */

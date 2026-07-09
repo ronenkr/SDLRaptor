@@ -148,6 +148,26 @@ VOID
 );
 
 /***************************************************************************
+ENEMY_GetDistinct () - Fills out[] with up to `count` DISTINCT visible ships
+(wrapping/repeating only once count exceeds how many are actually visible).
+Returns how many distinct ships were available (0 if none visible).
+ ***************************************************************************/
+INT
+ENEMY_GetDistinct (
+INT            count,         // INPUT : how many targets are wanted
+SPRITE_SHIP ** out             // OUTPUT: filled with `count` targets
+);
+
+/***************************************************************************
+ENEMY_GetDistinctAir () - Same as ENEMY_GetDistinct(), air targets only.
+ ***************************************************************************/
+INT
+ENEMY_GetDistinctAir (
+INT            count,         // INPUT : how many targets are wanted
+SPRITE_SHIP ** out             // OUTPUT: filled with `count` targets
+);
+
+/***************************************************************************
 ENEMY_DamageAll () - Tests to see if hit occured at x/y and applys damage
  ***************************************************************************/
 BOOL

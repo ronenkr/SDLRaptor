@@ -353,7 +353,9 @@ SPRITE_SHIP * sh
 
    sh->next->prev = sh->prev;
    sh->prev->next = sh->next;
-   
+
+   ESHOT_RemoveByEnemy ( sh );
+
    memset ( sh, 0, sizeof ( SPRITE_SHIP ) );
    sh->item = ~0;
 
@@ -530,6 +532,86 @@ VOID
    }
 
    return ( NUL );
+}
+
+/***************************************************************************
+ENEMY_GetDistinct () - Fills out[] with up to `count` DISTINCT visible ships
+(wrapping/repeating only once count exceeds how many are actually visible).
+Returns how many distinct ships were available (0 if none visible).
+ ***************************************************************************/
+INT
+ENEMY_GetDistinct (
+INT            count,
+SPRITE_SHIP ** out
+)
+{
+   INT            loop;
+   INT            j;
+   INT            n;
+   SPRITE_SHIP *  tmp;
+
+   if ( !cur_visable )
+      return ( 0 );
+
+   n = cur_visable;
+   for ( loop = 0; loop < n; loop++ )
+      rscreen [ loop ] = onscreen [ loop ];
+
+   // Fisher-Yates - so repeated volleys don't always favor onscreen[0..]
+   for ( loop = n - 1; loop > 0; loop-- )
+   {
+      j = random ( loop + 1 );
+      tmp           = rscreen [ loop ];
+      rscreen [ loop ] = rscreen [ j ];
+      rscreen [ j ]    = tmp;
+   }
+
+   for ( loop = 0; loop < count; loop++ )
+      out [ loop ] = rscreen [ loop % n ];
+
+   return ( n );
+}
+
+/***************************************************************************
+ENEMY_GetDistinctAir () - Same as ENEMY_GetDistinct(), air targets only.
+ ***************************************************************************/
+INT
+ENEMY_GetDistinctAir (
+INT            count,
+SPRITE_SHIP ** out
+)
+{
+   INT            loop;
+   INT            j;
+   INT            n;
+   SPRITE_SHIP *  tmp;
+
+   if ( !cur_visable )
+      return ( 0 );
+
+   n = 0;
+   for ( loop = 0; loop < cur_visable; loop++ )
+   {
+      if ( onscreen[loop]->groundflag ) continue;
+      rscreen [ n ] = onscreen [ loop ];
+      n++;
+   }
+
+   if ( !n )
+      return ( 0 );
+
+   for ( loop = n - 1; loop > 0; loop-- )
+   {
+      j = random ( loop + 1 );
+      tmp           = rscreen [ loop ];
+      rscreen [ loop ] = rscreen [ j ];
+      rscreen [ j ]    = tmp;
+   }
+
+   for ( loop = 0; loop < count; loop++ )
+      out [ loop ] = rscreen [ loop % n ];
+
+   return ( n );
 }
 
 /***************************************************************************

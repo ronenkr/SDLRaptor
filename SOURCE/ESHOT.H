@@ -40,6 +40,16 @@ INT           gun_num      // INPUT : gun number to shoot
 );
 
 /***************************************************************************
+ESHOT_RemoveByEnemy() - Removes any in-flight shots fired by an enemy that's
+about to be recycled (ENEMY_Remove), so they don't keep a dangling `en`
+pointer into a struct that's about to be memset/reused.
+ ***************************************************************************/
+VOID
+ESHOT_RemoveByEnemy (
+SPRITE_SHIP * enemy        // INPUT : enemy about to be removed
+);
+
+/***************************************************************************
 ESHOT_Think () - Does All Thinking for shot system
  ***************************************************************************/
 VOID

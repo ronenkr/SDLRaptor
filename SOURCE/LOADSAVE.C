@@ -22,7 +22,11 @@
 
 #define MAX_SAVE  10
 
-PRIVATE  CHAR * fmt        = "CHAR%04u.FIL";
+/* CHARnnnn.FIL lives in PLAT_GetSaveDir(), not cwd - see EnsureSaveDir().
+   fmt starts as a bare relative name so anything that (implausibly) uses
+   it before EnsureSaveDir() runs still behaves like before. */
+PRIVATE  CHAR   fmt [ _MAX_PATH ] = "CHAR%04u.FIL";
+PRIVATE  BOOL   fmt_init   = FALSE;
 PRIVATE  CHAR * cdfmt      = "%s\\CHAR%04u.FIL";
 PRIVATE  CHAR * pogpath    = "APOGEECD";
 PRIVATE  INT    filepos    = EMPTY;
@@ -31,6 +35,28 @@ PRIVATE  BYTE * mapmem;
 PRIVATE  BYTE   cdflag     = FALSE;
 PRIVATE  CHAR   cdpath[33];
 PRIVATE  CHAR   g_setup_ini[66];
+
+/***************************************************************************
+EnsureSaveDir () - Points fmt at PLAT_GetSaveDir() the first time any
+save/load function needs it (a stable per-user directory, independent of
+cwd/exe-dir/data-dir resolution - see the comment on PLAT_GetSaveDir).
+ ***************************************************************************/
+PRIVATE VOID
+EnsureSaveDir (
+VOID
+)
+{
+   CHAR *dir;
+
+   if ( fmt_init )
+      return;
+
+   fmt_init = TRUE;
+
+   dir = PLAT_GetSaveDir ();
+   if ( dir && dir[0] )
+      sprintf ( fmt, "%sCHAR%%04u.FIL", dir );
+}
 
 /***************************************************************************
 RAP_SetPlayerDiff () - Set Player Difficulty
@@ -111,8 +137,10 @@ RAP_AreSavedFiles (
 VOID
 )
 {
-   CHAR temp[41];
+   CHAR temp[_MAX_PATH];
    INT  loop;
+
+   EnsureSaveDir();
 
    for ( loop = 0; loop < MAX_SAVE; loop++ )
    {
@@ -166,9 +194,11 @@ RAP_FFSaveFile (
 VOID
 )
 {
-   CHAR temp[41];
+   CHAR temp[_MAX_PATH];
    INT  loop;
    BOOL rval = FALSE;
+
+   EnsureSaveDir();
 
    filepos = EMPTY;
 
@@ -200,10 +230,12 @@ PLAYEROBJ * in_plr
 )
 {
    PLAYEROBJ   tp;
-   CHAR        temp[41];
+   CHAR        temp[_MAX_PATH];
    INT         loop;
    BOOL        rval = FALSE;
    INT         handle = -1;
+
+   EnsureSaveDir();
 
    TRACE ( "[TRACE] RAP_IsSaveFile: enter, name='%s' callsign='%s'\n",
              in_plr->name, in_plr->callsign  );
@@ -255,11 +287,13 @@ VOID
 )
 {
    extern  CHAR   gdmodestr[];
-   CHAR    filename[41];
+   CHAR    filename[_MAX_PATH];
    INT     handle;
    INT     loop;
    INT     rval = FALSE;
    OBJ     inobj;
+
+   EnsureSaveDir();
 
    if ( filepos == EMPTY )
       return ( FALSE );
@@ -325,10 +359,12 @@ VOID
    extern  CHAR   gdmodestr[];
    extern OBJ     first_objs;
    extern OBJ     last_objs;
-   CHAR           filename[41];
+   CHAR           filename[_MAX_PATH];
    INT            handle;
    INT            rval = FALSE;
    OBJ *          cur;
+
+   EnsureSaveDir();
 
    if ( filepos == EMPTY )
       EXIT_Error("RAP_Save() ERR: Try to Save Invalid Player");
@@ -451,8 +487,8 @@ RAP_LoadWin(
 VOID
 )
 {
-   CHAR           temp[41];
-   CHAR           filenames[MAX_SAVE][33];
+   CHAR           temp[_MAX_PATH];
+   CHAR           filenames[MAX_SAVE][_MAX_PATH];
    PLAYEROBJ      tplr;
    SWD_DLG        dlg;
    INT            window;
@@ -463,6 +499,8 @@ VOID
    INT            addnum;
    BOOL           fndflag = FALSE;
    BOOL           rval = 0;
+
+   EnsureSaveDir();
 
    memset ( filenames, 0, sizeof ( filenames ) );
    for ( loop = 0; loop < MAX_SAVE; loop++ )
@@ -478,7 +516,7 @@ VOID
          {
             pos      = loop;
          }
-         strncpy ( filenames [ loop ], temp, 66 );
+         strncpy ( filenames [ loop ], temp, sizeof ( filenames [ loop ] ) - 1 );
       }
    }
 
@@ -605,11 +643,13 @@ VOID
             case LOAD_NEXT:
                pos++;
                update = TRUE;
+               while ( IMS_IsAck() );
                break;
 
             case LOAD_PREV:
                pos--;
                update = TRUE;
+               while ( IMS_IsAck() );
                break;
 
             case LOAD_DEL:

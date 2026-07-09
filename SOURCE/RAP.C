@@ -94,6 +94,7 @@ PUBLIC BOOL          end_fadeflag   = FALSE;
 PUBLIC FLATS *       flatlib [ 4 ];
 PUBLIC BOOL          debugflag      = FALSE;
 PUBLIC BOOL          testflag       = FALSE;
+PUBLIC BOOL          g_newfeatures  = FALSE;   // set by the --newfeatures command-line flag
 PUBLIC INT           g_oldshield    = EMPTY;
 PUBLIC INT           g_oldsuper     = EMPTY;
 PUBLIC BYTE *        numbers[11];
